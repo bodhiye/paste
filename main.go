@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 
 	"paste.org.cn/paste/middleware"
-	. "paste.org.cn/paste/util"
+	"paste.org.cn/paste/util"
 )
 
 func main() {
@@ -18,7 +18,7 @@ func main() {
 	_, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	LoadConfig("config")
+	util.LoadConfig("config")
 
 	router := gin.New()
 	router.Use(gin.Recovery())
@@ -29,10 +29,10 @@ func main() {
 	})
 
 	srv := &http.Server{
-		Addr:    GetServerHost(viper.GetString("server.host")),
+		Addr:    util.GetServerHost(viper.GetString("server.host")),
 		Handler: router,
 	}
-	RunServer(srv)
+	util.RunServer(srv)
 	cancel()
-	ShutdownServer(srv)
+	util.ShutdownServer(srv)
 }
