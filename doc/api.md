@@ -4,8 +4,8 @@
 
 |Method|接口|说明|
 | :--- | :--- | :--- |
-|`POST`|/v1/paste|创建一个永久分享链接|
-|`POST`|/v1/paste/once|创建一个一次性分享链接，阅后即焚|
+| `POST` |/v1/paste|创建一个永久分享链接|
+| `POST` |/v1/paste/once|创建一个一次性分享链接，阅后即焚|
 
 ### `POST /v1/paste | /v1/paste/once`
 
@@ -31,11 +31,11 @@ Content-Type: application/json
 
 **`response`**
 
-|字段|类型|说明|
-| :--- | :--- | :--- |
-|code|int|200:表示正确|
-|key|string|分享文本的key，可以用来访问文本内容|
-|message|string|错误描述信息|
+|字段|类型|是否必选|说明|
+| :--- | :--- | :--- | :--- |
+|code|int|Yes|200: 表示正确|
+|key|string|No|分享文本的key，可以用来访问文本内容|
+|message|string|No|错误描述信息|
 
 ``` http
 HTTP/1.1 200 OK
@@ -59,12 +59,12 @@ GET /v1/paste/:test?password=123456 HTTP/1.1
 
 **`response`**
 
-|字段|类型|说明|
-| :--- | :--- | :--- |
-|code|int|200:表示正确|
-|langtype|string|文本语言类型|
-|content|string|分享的文本内容|
-|message|string|错误描述信息|
+|字段|类型|是否必选|说明|
+| :--- | :--- | :--- | :--- |
+|code|int|Yes|200: 表示正确|
+|langtype|string|No|文本语言类型|
+|content|string|No|分享的文本内容|
+|message|string|No|错误描述信息|
 
 ``` http
 HTTP/1.1 200 OK
