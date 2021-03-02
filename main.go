@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/viper"
 
 	"paste.org.cn/paste/middleware"
+	"paste.org.cn/paste/router"
 	"paste.org.cn/paste/util"
 )
 
@@ -20,17 +21,15 @@ func main() {
 
 	util.LoadConfig("config")
 
-	router := gin.New()
-	router.Use(gin.Recovery())
-	router.Use(middleware.LogInfo)
-	router.Use(middleware.ReqID)
-	router.Any("/health", func(c *gin.Context) {
-		c.String(http.StatusOK, "paste ok!")
-	})
+	paste := gin.New()
+	paste.Use(gin.Recovery())
+	paste.Use(middleware.LogInfo)
+	paste.Use(middleware.ReqID)
+	router.Init(paste)
 
 	srv := &http.Server{
 		Addr:    util.GetServerHost(viper.GetString("server.host")),
-		Handler: router,
+		Handler: paste,
 	}
 	util.RunServer(srv)
 	cancel()
