@@ -44,8 +44,7 @@ func EnsureWithLogger(ctx context.Context) (context.Context, *logrus.Entry) {
 	if logger == nil {
 		var rid string
 		ctx, rid = EnsureWithReqId(ctx)
-		logger = logrus.NewEntry(logrus.StandardLogger()).
-			WithField(REQID, rid)
+		logger = logrus.NewEntry(logrus.StandardLogger()).WithField(REQID, rid)
 		ctx = withLogger(ctx, logger.(*logrus.Entry))
 	}
 

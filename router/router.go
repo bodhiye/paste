@@ -4,11 +4,14 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"paste.org.cn/paste/db"
 	"paste.org.cn/paste/service"
 )
 
-func Init(r *gin.Engine) {
-	paste := &service.Paste{}
+func Init(r *gin.Engine, pasteDB db.Paste) {
+	paste := &service.Paste{
+		Paste: pasteDB,
+	}
 
 	r.POST("v1/paste", paste.PostPaste)
 	r.POST("v1/paste/once", paste.PostPasteOnce)

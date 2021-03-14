@@ -3,3 +3,9 @@ log:
 
 server:
   host: 0.0.0.0:6666
+
+paste:
+  mgo:
+    host: mongodb://127.0.0.1:27017
+    db: paste
+    coll: paste

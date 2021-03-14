@@ -1,58 +1,41 @@
 package util
 
 import (
-	"context"
-	"fmt"
-	"net"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
+	"crypto/md5"
+	"encoding/hex"
+	"math/rand"
 	"time"
-
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+	"unsafe"
 )
 
-func LoadConfig(configName string) {
-	viper.SetConfigName(configName)
-	viper.AddConfigPath(".")
-	err := viper.ReadInConfig()
-	if err != nil {
-		log.Fatalf("Fatal error config file: %+v", err)
-	}
+const (
+	letterBytes   = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	letterIdxBits = 6
+	letterIdxMask = 1<<letterIdxBits - 1
+	letterIdxMax  = 63 / letterIdxBits
+)
 
-	level, _ := log.ParseLevel(viper.GetString("log.level"))
-	log.SetLevel(level)
-}
+func RandString(n int) string {
+	var src = rand.NewSource(time.Now().UnixNano())
+	b := make([]byte, n)
 
-func GetServerHost(sh string) string {
-	p := os.Getenv("PORT_HTTP")
-	h, _, err := net.SplitHostPort(sh)
-	if err != nil || len(p) == 0 {
-		return sh
-	}
-	return fmt.Sprintf("%s:%s", h, p)
-}
-
-func RunServer(srv *http.Server) {
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %+v", err)
+	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
+		if remain == 0 {
+			cache, remain = src.Int63(), letterIdxMax
 		}
-	}()
+		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
+			b[i] = letterBytes[idx]
+			i--
+		}
+		cache >>= letterIdxBits
+		remain--
+	}
 
-	quit := make(chan os.Signal, 5)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	log.Println("Shutdown Server ...")
+	return *(*string)(unsafe.Pointer(&b))
 }
 
-func ShutdownServer(srv *http.Server) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal("Server Shutdown: %+v", err)
-	}
-	log.Println("Server exiting")
+func String2md5(str string) string {
+	h := md5.New()
+	h.Write([]byte(str))
+	return hex.EncodeToString(h.Sum(nil))
 }
