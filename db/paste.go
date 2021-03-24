@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/spf13/viper"
@@ -9,12 +10,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"paste.org.cn/paste/proto"
 	"paste.org.cn/paste/util"
 )
 
 type Paste interface {
 	Set(ctx context.Context, entry PasteEntry) (string, error)
-	Get(ctx context.Context, key string) (PasteEntry, error)
+	Get(ctx context.Context, key, password string) (PasteEntry, error)
 }
 
 type _Paste struct {
@@ -67,7 +69,6 @@ func (p _Paste) Init(ctx context.Context) error {
 }
 
 func (p _Paste) Set(ctx context.Context, entry PasteEntry) (key string, err error) {
-	entry.CreatedAt = time.Now()
 	entry.Key = util.RandString(10)
 
 	for {
@@ -83,7 +84,28 @@ func (p _Paste) Set(ctx context.Context, entry PasteEntry) (key string, err erro
 	return
 }
 
-func (p _Paste) Get(ctx context.Context, key string) (entry PasteEntry, err error) {
+func (p _Paste) Get(ctx context.Context, key, password string) (entry PasteEntry, err error) {
 	err = p.Collection.FindOne(ctx, bson.M{"key": key}).Decode(&entry)
+	if err != nil {
+		return
+	}
+
+	if entry.Password != "" && entry.Password != util.String2md5(password) {
+		err = errors.New(proto.WrongPassword)
+		return
+	}
+	if time.Now().After(entry.ExpireAt) {
+		err = errors.New(proto.ContentExpired)
+		return
+	}
+
+	if entry.Once {
+		err = p.delete(ctx, key)
+	}
+	return
+}
+
+func (p _Paste) delete(ctx context.Context, key string) (err error) {
+	_, err = p.Collection.DeleteOne(ctx, bson.M{"key": key})
 	return
 }

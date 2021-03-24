@@ -36,12 +36,12 @@ func main() {
 	paste.Use(middleware.LogInfo)
 	paste.Use(middleware.ReqID)
 
-	db, err := db.NewPaste(ctx, viper.Sub("paste.mgo"))
+	pasteDB, err := db.NewPaste(ctx, viper.Sub("paste.mgo"))
 	if err != nil {
 		log.Errorf("init paste db failed: %+v", err)
 		return
 	}
-	router.Init(paste, db)
+	router.Init(paste, pasteDB)
 
 	srv := &http.Server{
 		Addr:    util.GetServerHost(viper.GetString("server.host")),
