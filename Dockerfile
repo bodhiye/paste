@@ -1,4 +1,7 @@
-FROM golang:1.15.1 AS builder
+FROM golang:alpine AS builder
+
+ENV GOPROXY=https://goproxy.cn,https://goproxy.io,direct \
+    GO111MODULE=on
 
 WORKDIR /go/cache
 COPY go.mod .
@@ -10,8 +13,8 @@ RUN cd /go/src/paste.org.cn/paste && \
     go install /go/src/paste.org.cn/paste
 
 FROM ubuntu:20.04
-LABEL maintainer="叶琼州" \
-    email="yeqiongzhou@whu.edu.cn"
+LABEL MAINTAINER="叶琼州" \
+    EMAIL="yeqiongzhou@whu.edu.cn"
 
 RUN sed -i s:archive.ubuntu.com:mirrors.aliyun.com:g /etc/apt/sources.list \
     && sed -i s:security.ubuntu.com:mirrors.aliyun.com:g /etc/apt/sources.list
@@ -28,5 +31,7 @@ COPY --from=builder /go/bin/paste /root/paste
 COPY config.yaml /root/config.yaml
 COPY docker-entrypoint.sh /root/docker-entrypoint.sh
 RUN chmod +x /root/docker-entrypoint.sh
+
 EXPOSE 80
+
 ENTRYPOINT ["/root/docker-entrypoint.sh"]
