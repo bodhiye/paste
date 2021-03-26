@@ -7,9 +7,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"paste.org.cn/paste/db"
-	"paste.org.cn/paste/proto"
-	"paste.org.cn/paste/util"
+	"paste.org.cn/paste/server/db"
+	"paste.org.cn/paste/server/proto"
+	"paste.org.cn/paste/server/util"
 )
 
 type Paste struct {

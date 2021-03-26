@@ -5,7 +5,7 @@ services:
     image: mongo
     command: mongod --port 27017
     restart: always
-    network_mode: "host"
+    # network_mode: "host"
     ports:
       - "27017:27017"
     volumes:
@@ -17,7 +17,7 @@ services:
     depends_on:
       - mongo
     restart: always
-    network_mode: "host"
+    # network_mode: "host"
     ports:
       - "80:80"
     logging:

@@ -10,8 +10,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"paste.org.cn/paste/proto"
-	"paste.org.cn/paste/util"
+	"paste.org.cn/paste/server/proto"
+	"paste.org.cn/paste/server/util"
 )
 
 type Paste interface {

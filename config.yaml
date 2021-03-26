@@ -6,6 +6,6 @@ server:
 
 paste:
   mgo:
-    host: mongodb://host.docker.internal:27017
+    host: mongodb://127.0.0.1:27017
     db: paste
     coll: paste
