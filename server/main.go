@@ -9,10 +9,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
-	"paste.org.cn/paste/db"
-	"paste.org.cn/paste/middleware"
-	"paste.org.cn/paste/router"
-	"paste.org.cn/paste/util"
+	"paste.org.cn/paste/server/db"
+	"paste.org.cn/paste/server/middleware"
+	"paste.org.cn/paste/server/router"
+	"paste.org.cn/paste/server/util"
 )
 
 func main() {

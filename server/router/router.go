@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"paste.org.cn/paste/db"
-	"paste.org.cn/paste/service"
+	"paste.org.cn/paste/server/db"
+	"paste.org.cn/paste/server/service"
 )
 
 func Init(r *gin.Engine, pasteDB db.Paste) {

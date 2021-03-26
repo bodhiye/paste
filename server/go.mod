@@ -1,4 +1,4 @@
-module paste.org.cn/paste
+module paste.org.cn/paste/server
 
 go 1.15
 

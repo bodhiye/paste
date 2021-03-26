@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"paste.org.cn/paste/util"
+	"paste.org.cn/paste/server/util"
 )
 
 var LogInfo = gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
