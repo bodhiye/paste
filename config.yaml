@@ -2,7 +2,7 @@ log:
   level: DEBUG
 
 server:
-  host: 0.0.0.0:6666
+  host: 0.0.0.0:80
 
 paste:
   mgo:

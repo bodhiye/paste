@@ -94,7 +94,7 @@ func (p _Paste) Get(ctx context.Context, key, password string) (entry PasteEntry
 		err = errors.New(proto.WrongPassword)
 		return
 	}
-	if time.Now().After(entry.ExpireAt) {
+	if !entry.ExpireAt.IsZero() && time.Now().After(entry.ExpireAt) {
 		err = errors.New(proto.ContentExpired)
 		return
 	}

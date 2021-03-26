@@ -40,9 +40,11 @@ func (p *Paste) PostPaste(c *gin.Context) {
 	entry := db.PasteEntry{
 		Langtype:  req.Langtype,
 		Content:   req.Content,
-		Password:  util.String2md5(req.Password),
 		ClientIP:  c.ClientIP(),
 		CreatedAt: time.Now(),
+	}
+	if req.Password != "" {
+		entry.Password = util.String2md5(req.Password)
 	}
 	if req.ExpireDate > 0 {
 		entry.ExpireAt = time.Now().Add(req.ExpireDate)

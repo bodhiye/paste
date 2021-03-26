@@ -15,14 +15,6 @@ import (
 	"paste.org.cn/paste/util"
 )
 
-type PasteConfig struct {
-	Mgo struct {
-		Host string `json:"host"`
-		DB   string `json:"db"`
-		Coll string `json:"coll"`
-	} `json:"mgo" mapstructure:"mgo"`
-}
-
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 

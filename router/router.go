@@ -13,9 +13,9 @@ func Init(r *gin.Engine, pasteDB db.Paste) {
 		Paste: pasteDB,
 	}
 
-	r.POST("v1/paste", paste.PostPaste)
-	r.POST("v1/paste/once", paste.PostPasteOnce)
-	r.GET("v1/paste/:key", paste.GetPaste)
+	r.POST("/v1/paste", paste.PostPaste)
+	r.POST("/v1/paste/once", paste.PostPasteOnce)
+	r.GET("/v1/paste/:key", paste.GetPaste)
 
 	// health check
 	r.Any("/health", func(c *gin.Context) {
