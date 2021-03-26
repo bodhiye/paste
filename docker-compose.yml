@@ -1,0 +1,33 @@
+version: "3"
+
+services:
+  mongo:
+    image: mongo
+    command: mongod --port 27017
+    restart: always
+    network_mode: "host"
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongodb/db:/data/db
+
+  paste:
+    build: .
+    image: paste
+    depends_on:
+      - mongo
+    restart: always
+    network_mode: "host"
+    ports:
+      - "80:80"
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m" # 单个文件大小为20m
+        max-file: "10" # 最多10个文件
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"] # 设置健康检查程序
+      interval: 60s # 设置检查间隔
+      timeout: 3s # 设置检查超时时间
+      retries: 3 # 设置重试次数
+      start_period: 30s # 启动后，多少秒开始启动检测程序
