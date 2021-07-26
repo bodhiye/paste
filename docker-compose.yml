@@ -5,21 +5,23 @@ services:
     image: mongo
     command: mongod --port 27017
     restart: always
-    # network_mode: "host"
     ports:
       - "27017:27017"
     volumes:
-      - ./mongodb/db:/data/db
+      - ../mongodb/db:/data/db
 
   paste:
-    build: .
+    build:
+      context: .
+      dockerfile: ./server/Dockerfile
     image: paste
     depends_on:
       - mongo
     restart: always
-    # network_mode: "host"
     ports:
-      - "80:80"
+      - "8000:8000"
+    links:
+      - mongo
     logging:
       driver: json-file
       options:
@@ -31,3 +33,15 @@ services:
       timeout: 3s # 设置检查超时时间
       retries: 3 # 设置重试次数
       start_period: 30s # 启动后，多少秒开始启动检测程序
+  
+  paste-web:
+    build:
+      context: .
+      dockerfile: ./web/Dockerfile
+    image: paste-web
+    depends_on:
+      - paste
+    restart: always
+    ports:
+      - "80:80"
+    command: [ 'nginx', '-g', 'daemon off;' ]

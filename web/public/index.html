@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta name="apple-mobile-web-app-title" content="Paste">
+    <meta itemprop="author" content="叶琼州" />
+    <meta itemprop="email" content="yeqiongzhou@whu.edu.cn" />
+    <meta itemprop="url" content="https://paste.org.cn" />
+    <link rel="icon" href="./favicon.ico">
+    <title>在线代码分享平台</title>
+    <% for (let i in htmlWebpackPlugin.options.cdn&&htmlWebpackPlugin.options.cdn.css) { %>
+    <link rel="stylesheet" href="<%= htmlWebpackPlugin.options.cdn.css[i] %>">
+    <% } %>  
+    <% for (let i in htmlWebpackPlugin.options.cdn&&htmlWebpackPlugin.options.cdn.js) { %>
+    <script src="<%= htmlWebpackPlugin.options.cdn.js[i] %>"></script>
+    <% } %>
+</head>
+
+<body class="max-height">
+    <noscript>
+        <strong>We're sorry but PASTE doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+    </noscript>
+    <div id="app"></div>
+    <!-- built files will be auto injected -->
+
+    <% if (process.env.NODE_ENV === 'production' ) { %>
+    <script>
+        var _hmt = _hmt || [];
+        (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?e4d5a14f4acbb35bdc17b37894cd4341";
+          var s = document.getElementsByTagName("script")[0]; 
+          s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+    <% } %>
+</body>
+
+</html>

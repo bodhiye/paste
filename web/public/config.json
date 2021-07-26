@@ -1,0 +1,19 @@
+{
+  "api": {
+    "backend": "/api/",
+    "path": "v1/paste"
+  },
+  "footer": [
+    {
+      "url": "https://yeqiongzhou.com",
+      "text": "博客"
+    },
+    {
+      "url": "mailto:yeqiongzhou@whu.edu.cn",
+      "text": "联系我"
+    }
+  ],
+  "beian": {
+    "number": "赣ICP备20001186号"
+  }
+}

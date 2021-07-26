@@ -26,14 +26,20 @@ func (p *Paste) PostPaste(c *gin.Context) {
 	err := c.BindJSON(&req)
 	if err != nil {
 		log.Errorf("BindJSON failed: %+v", err)
-		c.JSON(http.StatusBadRequest, proto.InvalidArgs)
+		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
+			Code:    http.StatusBadRequest,
+			Message: proto.InvalidArgs,
+		})
 		return
 	}
 
 	length = utf8.RuneCountInString(req.Content)
-	if length > 10000 {
+	if length > 100000 {
 		log.Errorf("Content is too long: %d", length)
-		c.JSON(http.StatusBadRequest, proto.TooManyContent)
+		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
+			Code:    http.StatusBadRequest,
+			Message: proto.TooManyContent,
+		})
 		return
 	}
 
@@ -47,16 +53,22 @@ func (p *Paste) PostPaste(c *gin.Context) {
 		entry.Password = util.String2md5(req.Password)
 	}
 	if req.ExpireDate > 0 {
-		entry.ExpireAt = time.Now().Add(req.ExpireDate)
+		entry.ExpireAt = time.Now().Add(time.Second * time.Duration(req.ExpireDate))
 	}
 
 	key, err := p.Paste.Set(ctx, entry)
 	if err != nil {
 		log.Errorf("Failed to insert entry into database: %+v", err)
-		c.JSON(http.StatusBadRequest, proto.PasteFailed)
+		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
+			Code:    http.StatusBadRequest,
+			Message: proto.PasteFailed,
+		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"key": key})
+	c.JSON(http.StatusCreated, proto.PostPasteResp{
+		Code: http.StatusCreated,
+		Key:  key,
+	})
 }
 
 func (p *Paste) PostPasteOnce(c *gin.Context) {
@@ -69,14 +81,20 @@ func (p *Paste) PostPasteOnce(c *gin.Context) {
 	err := c.BindJSON(&req)
 	if err != nil {
 		log.Errorf("BindJSON failed: %+v", err)
-		c.JSON(http.StatusBadRequest, proto.InvalidArgs)
+		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
+			Code:    http.StatusBadRequest,
+			Message: proto.InvalidArgs,
+		})
 		return
 	}
 
 	length = utf8.RuneCountInString(req.Content)
 	if length > 10000 {
 		log.Errorf("Content is too long: %d", length)
-		c.JSON(http.StatusBadRequest, proto.TooManyContent)
+		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
+			Code:    http.StatusBadRequest,
+			Message: proto.TooManyContent,
+		})
 		return
 	}
 
@@ -92,10 +110,16 @@ func (p *Paste) PostPasteOnce(c *gin.Context) {
 	key, err := p.Paste.Set(ctx, entry)
 	if err != nil {
 		log.Errorf("Failed to insert entry into database: %+v", err)
-		c.JSON(http.StatusBadRequest, proto.PasteFailed)
+		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
+			Code:    http.StatusBadRequest,
+			Message: proto.PasteFailed,
+		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"key": key})
+	c.JSON(http.StatusOK, proto.PostPasteResp{
+		Code: http.StatusCreated,
+		Key:  key,
+	})
 }
 
 func (p *Paste) GetPaste(c *gin.Context) {
@@ -108,13 +132,26 @@ func (p *Paste) GetPaste(c *gin.Context) {
 	if err != nil {
 		log.Errorf("Failed to get entry: %+v", err)
 		if err.Error() == proto.WrongPassword {
-			c.JSON(http.StatusUnauthorized, proto.GetPasteFailed)
+			c.JSON(http.StatusOK, proto.GetPasteResp{
+				Code:    http.StatusUnauthorized,
+				Message: proto.WrongPassword,
+			})
 		} else if err.Error() == proto.ContentExpired {
-			c.JSON(http.StatusLocked, proto.ContentExpired)
+			c.JSON(http.StatusOK, proto.GetPasteResp{
+				Code:    http.StatusLocked,
+				Message: proto.ContentExpired,
+			})
 		} else {
-			c.JSON(http.StatusBadRequest, proto.GetPasteFailed)
+			c.JSON(http.StatusOK, proto.GetPasteResp{
+				Code:    http.StatusBadRequest,
+				Message: proto.GetPasteFailed,
+			})
 		}
 		return
 	}
-	c.JSON(http.StatusOK, entry)
+	c.JSON(http.StatusOK, proto.GetPasteResp{
+		Code:     http.StatusOK,
+		Langtype: entry.Langtype,
+		Content:  entry.Content,
+	})
 }

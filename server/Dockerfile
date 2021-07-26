@@ -15,16 +15,12 @@ FROM alpine:latest
 LABEL MAINTAINER="叶琼州" \
     EMAIL="yeqiongzhou@whu.edu.cn"
 
-RUN apk add --no-cache  gettext tzdata   && \
-    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-    echo "Asia/Shanghai" >  /etc/timezone && \
-    date && \
-    apk del tzdata
+ENV TZ=Asia/Shanghai
 
 WORKDIR /root
 COPY --from=builder /go/bin/server ./
-COPY config.yaml ./
+COPY /server/config.yaml ./
 
-EXPOSE 80
+EXPOSE 8000
 
 ENTRYPOINT ./server

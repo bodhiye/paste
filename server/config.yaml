@@ -2,10 +2,10 @@ log:
   level: DEBUG
 
 server:
-  host: 0.0.0.0:80
+  host: 0.0.0.0:8000
 
 paste:
   mgo:
-    host: mongodb://127.0.0.1:27017
+    host: mongodb://mongo:27017
     db: paste
     coll: paste

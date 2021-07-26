@@ -1,12 +1,10 @@
 package proto
 
-import "time"
-
 type PostPasteReq struct {
-	Langtype   string        `json:"langtype"`
-	Content    string        `json:"content"` // Support up to 10000 characters.
-	Password   string        `json:"password,omitempty"`
-	ExpireDate time.Duration `json:"expireDate,omitempty"`
+	Langtype   string `json:"langtype"`
+	Content    string `json:"content"` // 最大支持十万个字符
+	Password   string `json:"password,omitempty"`
+	ExpireDate int64  `json:"expireDate,omitempty"`
 }
 
 type PostPasteResp struct {
