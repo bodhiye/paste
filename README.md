@@ -1,6 +1,7 @@
 <div align=center>
 	<img src="https://img.shields.io/badge/golang-1.15.6-blue"/>
 	<img src="https://img.shields.io/badge/gin-1.6.3-lightBlue"/>
+    <img src="https://img.shields.io/badge/node-14.17.3-green"/>
 	<img src="https://img.shields.io/badge/vue-2.6.10-brightgreen"/>
 </div>
 
@@ -10,7 +11,7 @@
 
 ## 部署
 
-先修改 `paste/web/public/config.json` 配置文件，接着在 `paste/web/` 目录下依次执行 `npm install` 和 `npm run build` 生成 vue 部署文件，最后使用 docker-compose 方式来部署容器服务，输入 `docker-compose up -d`　执行一键部署服务。
+先修改 `paste/web/public/config.json` 配置文件，之后使用 docker-compose 方式来部署容器服务，输入 `docker-compose up -d`　执行一键部署服务。如需开启百度统计，取消注释并替换 `paste/web/public/index.html` 中的百度统计脚本。
 
 ## TODO
 
@@ -32,9 +33,9 @@
 
 |字段|类型|是否必选|说明|
 | :--- | :--- | :--- | :--- |
-|langtype|string|Yes|文本语言类型，支持常见的编程语言类型|
-|content|string|Yes|分享的文本内容，最大支持十万个字符|
-|password|string|No|文本密码，可选项|
+|langtype|string|Yes|代码语言类型，支持常见的编程语言类型|
+|content|string|Yes|分享的代码内容，最大支持十万个字符|
+|password|string|No|代码文本密码，可选项|
 |expireDate|int|No|过期时间，单位秒，可选项|
 
 ``` http
@@ -54,7 +55,7 @@ Content-Type: application/json
 |字段|类型|是否必选|说明|
 | :--- | :--- | :--- | :--- |
 |code|int|Yes|201: 表示成功|
-|key|string|No|分享文本的key，可以用来访问文本内容|
+|key|string|No|分享代码文本的key，可以用来访问代码内容|
 |message|string|No|错误描述信息|
 
 ``` http
@@ -82,8 +83,8 @@ GET /v1/paste/:abcd123456?password=123456 HTTP/1.1
 |字段|类型|是否必选|说明|
 | :--- | :--- | :--- | :--- |
 |code|int|Yes|200: 表示成功|
-|langtype|string|No|文本语言类型|
-|content|string|No|分享的文本内容|
+|langtype|string|No|代码语言类型|
+|content|string|No|分享的代码内容|
 |message|string|No|错误描述信息|
 
 ``` http

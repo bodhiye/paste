@@ -13,9 +13,9 @@
 
 |字段|类型|是否必选|说明|
 | :--- | :--- | :--- | :--- |
-|langtype|string|Yes|文本语言类型，支持常见的编程语言类型|
-|content|string|Yes|分享的文本内容，最大支持十万个字符|
-|password|string|No|文本密码，可选项|
+|langtype|string|Yes|代码语言类型，支持常见的编程语言类型|
+|content|string|Yes|分享的代码内容，最大支持十万个字符|
+|password|string|No|代码文本密码，可选项|
 |expireDate|int|No|过期时间，单位秒，可选项|
 
 ``` http
@@ -35,7 +35,7 @@ Content-Type: application/json
 |字段|类型|是否必选|说明|
 | :--- | :--- | :--- | :--- |
 |code|int|Yes|201: 表示成功|
-|key|string|No|分享文本的key，可以用来访问文本内容|
+|key|string|No|分享代码文本的key，可以用来访问代码内容|
 |message|string|No|错误描述信息|
 
 ``` http
@@ -63,8 +63,8 @@ GET /v1/paste/:abcd123456?password=123456 HTTP/1.1
 |字段|类型|是否必选|说明|
 | :--- | :--- | :--- | :--- |
 |code|int|Yes|200: 表示成功|
-|langtype|string|No|文本语言类型|
-|content|string|No|分享的文本内容|
+|langtype|string|No|代码语言类型|
+|content|string|No|分享的代码内容|
 |message|string|No|错误描述信息|
 
 ``` http

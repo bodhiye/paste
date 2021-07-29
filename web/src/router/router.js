@@ -12,7 +12,7 @@ Router.prototype.push = function push(location, onResolve, onReject) {
 
 Vue.use(Router);
 
-export default new Router({
+const router = new Router({
     mode: "history",
     base: "/",
     routes: [
@@ -32,3 +32,13 @@ export default new Router({
         }
     ]
 })
+
+router.beforeEach(async (to, from, next) => {
+    if (to.path) {
+        if (window._hmt) {
+            window._hmt.push(['_trackPageview', '/#' + to.fullPath])
+        }
+    }
+    next()
+})
+export default router

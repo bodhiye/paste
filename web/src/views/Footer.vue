@@ -19,7 +19,7 @@
             </div>
         </div>
         <b-modal id="donate" hide-footer lazy>
-            <img src="http://file.paste.org.cn/sponsor.jpg" alt="赞赏">
+            <img src="https://file.paste.org.cn/sponsor.jpg" alt="赞赏">
         </b-modal>
     </div>
 </template>

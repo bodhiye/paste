@@ -18,6 +18,12 @@
     <% for (let i in htmlWebpackPlugin.options.cdn&&htmlWebpackPlugin.options.cdn.js) { %>
     <script src="<%= htmlWebpackPlugin.options.cdn.js[i] %>"></script>
     <% } %>
+
+    <% if (process.env.NODE_ENV === 'production' ) { %>
+    <script>
+        var _hmt = _hmt || [];
+    </script>
+    <% } %>
 </head>
 
 <body class="max-height">
@@ -27,17 +33,17 @@
     <div id="app"></div>
     <!-- built files will be auto injected -->
 
-    <% if (process.env.NODE_ENV === 'production' ) { %>
+    <!-- <% if (process.env.NODE_ENV === 'production' ) { %>
     <script>
         var _hmt = _hmt || [];
         (function() {
           var hm = document.createElement("script");
-          hm.src = "https://hm.baidu.com/hm.js?e4d5a14f4acbb35bdc17b37894cd4341";
+          hm.src = "https://hm.baidu.com/hm.js?xxx";
           var s = document.getElementsByTagName("script")[0]; 
           s.parentNode.insertBefore(hm, s);
         })();
     </script>
-    <% } %>
+    <% } %> -->
 </body>
 
 </html>

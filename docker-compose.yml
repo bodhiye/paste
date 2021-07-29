@@ -10,11 +10,11 @@ services:
     volumes:
       - ../mongodb/db:/data/db
 
-  paste:
+  server:
     build:
       context: .
       dockerfile: ./server/Dockerfile
-    image: paste
+    image: server
     depends_on:
       - mongo
     restart: always
@@ -27,21 +27,18 @@ services:
       options:
         max-size: "20m" # 单个文件大小为20m
         max-file: "10" # 最多10个文件
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"] # 设置健康检查程序
-      interval: 60s # 设置检查间隔
-      timeout: 3s # 设置检查超时时间
-      retries: 3 # 设置重试次数
-      start_period: 30s # 启动后，多少秒开始启动检测程序
   
-  paste-web:
+  web:
     build:
       context: .
       dockerfile: ./web/Dockerfile
-    image: paste-web
+    image: web
     depends_on:
-      - paste
+      - server
     restart: always
     ports:
       - "80:80"
+      - "443:443"
+    links:
+      - server
     command: [ 'nginx', '-g', 'daemon off;' ]

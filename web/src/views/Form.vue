@@ -9,13 +9,13 @@
                             <b-input-group :prepend="$t('lang.form.input[0].prepend')">
                                 <b-form-select v-model="form.langtype">
                                     <option value="plain">{{ $t('lang.form.select.plain') }}</option>
-                                    <option value="cpp">C/C++</option>
-                                    <option value="java">Java</option>
-                                    <option value="python">Python</option>
                                     <option value="bash">Bash</option>
-                                    <option value="markdown">Markdown</option>
-                                    <option value="json">JSON</option>
+                                    <option value="cpp">C/C++</option>
                                     <option value="go">Go</option>
+                                    <option value="java">Java</option>
+                                    <option value="json">JSON</option>
+                                    <option value="python">Python</option>
+                                    <option value="markdown">Markdown</option>
                                 </b-form-select>
                             </b-input-group>
                         </b-form-group>
