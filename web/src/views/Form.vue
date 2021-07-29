@@ -45,7 +45,7 @@
                             <b-form-textarea v-model="form.content" rows="12" 
                             :placeholder="$t('lang.form.textarea.placeholder.' + 
                             ($store.state.read_once ? 'read_once' : 'code'))" 
-                            required no-resize maxlength="100000" oninvalid="this.setCustomValidity('show me the code')">
+                            no-resize required oninvalid="this.setCustomValidity('show me the code')" oninput="setCustomValidity('')" maxlength="100000">
                             </b-form-textarea>
                         </b-form-group>
                         <b-form-group>
@@ -100,7 +100,7 @@
                 } else if (this.form.expireDate === "week") {
                     this.form.expireDate = 7*24*60*60
                 } else if (this.form.expireDate === "month") {
-                    this.form.form.expireDate = 30*24*60*60
+                    this.form.expireDate = 30*24*60*60
                 } else if (this.form.expireDate === "year") {
                     this.form.expireDate = 365*24*60*60
                 }
