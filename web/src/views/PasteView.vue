@@ -1,21 +1,21 @@
 <template>
     <b-row>
         <b-col md="1"></b-col>
-        <b-col md="10">
+        <b-col md="10" id="view">
             <div>
                 <b-card no-body>
                     <b-card-header>
                         <b-row>
                             <b-col md="6">
                                 <div>
-                                    <a>{{ linesCount }} 行</a>
+                                    <a>{{ linesCount }} {{ $t('lang.view.lines') }}</a>
                                     <a>&nbsp;|&nbsp;</a>
                                     <a>{{ $t('lang.view.lang.' + langtype) }}</a>
                                 </div>
                             </b-col>
                             <b-col md="6" style="text-align: right;">
                                 <b-check-group switches>
-                                    <b-checkbox v-model="raw" v-if="langtype === 'markdown'">源码</b-checkbox>
+                                    <b-checkbox v-model="raw" v-if="langtype === 'markdown'">{{ $t('lang.view.raw') }}</b-checkbox>
                                     <b-link id="clipboard-btn" :data-clipboard-text="content">
                                         {{ $t('lang.view.copy') }}
                                     </b-link>
@@ -139,6 +139,10 @@
     }
 </style>
 <style scoped>
+    #view {
+        margin-top: 2.5em;
+    }
+
     .markdown-body {
         box-sizing: border-box;
         min-width: 200px;
