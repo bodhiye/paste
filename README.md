@@ -1,4 +1,7 @@
 <div align=center>
+<img src="https://file.paste.org.cn/logo.png" width=300" height="300" />
+</div>
+<div align=center>
 	<img src="https://img.shields.io/badge/golang-1.15.6-blue"/>
 	<img src="https://img.shields.io/badge/gin-1.6.3-lightBlue"/>
     <img src="https://img.shields.io/badge/node-14.17.3-green"/>
