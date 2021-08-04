@@ -101,6 +101,10 @@ Content-Type: application/json
 }
 ```
 
+# 感谢
+
+web 前端参考了开源项目 [gin-vue-admin](https://github.com/flipped-aurora/gin-vue-admin)
+
 # 免责声明
 
 本平台只提供代码文本分享，与分享内容均没有任何联系。
