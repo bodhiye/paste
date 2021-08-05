@@ -103,7 +103,7 @@ Content-Type: application/json
 
 # 感谢
 
-web 前端参考了开源项目 [gin-vue-admin](https://github.com/flipped-aurora/gin-vue-admin)
+web 前端参考了开源项目 [gin-vue-admin](https://github.com/flipped-aurora/gin-vue-admin) & PasteMeFrontend
 
 # 免责声明
 

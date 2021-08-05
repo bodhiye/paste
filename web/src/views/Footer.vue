@@ -2,6 +2,7 @@
     <div class="row">
         <div class="col-md-12">
             <div class="footer">
+                <p><a id="one-word" @click="refresh">{{ oneWord }}</a></p>
                 <p>
                     <a>Copyright&nbsp;&copy;&nbsp;2021&nbsp;-&nbsp;{{ year }}&nbsp;&nbsp;|&nbsp;&nbsp;</a>
                     <a href="https://beian.miit.gov.cn" title="备案号" target="_blank">{{ $store.state.config.beian.number }}</a>
@@ -30,6 +31,22 @@
         data() {
             return {
                 year: new Date().getFullYear(),
+                oneWord: this.getOne(),
+            }
+        },
+        mounted() {
+            this.getOne().then(result => {
+                this.oneWord = result;
+            })
+        },
+        methods: {
+            getOne() {
+                return this.api.get('https://v1.hitokoto.cn/?encode=text', false);
+            },
+            refresh() {
+                this.getOne().then(result => {
+                    this.oneWord = result;
+                });
             }
         }
     }
@@ -47,6 +64,20 @@
 
     .footer a:link, .footer a:visited {
         color: #000000;
+    }
+
+    #one-word {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        cursor: pointer;
+    }
+
+    #one-popover {
+        font-family: Menlo, Monaco, "Andale Mono", "lucida console", "Courier New", monospace;
     }
 
     #donate img {
