@@ -1,5 +1,5 @@
 <div align=center>
-<img src="https://file.paste.org.cn/logo.png" width=300" height="300" />
+<img src="web/public/logo.png" width=300" height="300" />
 </div>
 <div align=center>
 	<img src="https://img.shields.io/badge/golang-1.15.6-blue"/>
@@ -14,7 +14,7 @@
 
 ## 部署
 
-先修改 `paste/web/public/config.json` 配置文件，之后使用 docker-compose 方式来部署容器服务，输入 `docker-compose up -d`　执行一键部署服务。如需开启百度统计，取消注释并替换 `paste/web/public/index.html` 中的百度统计脚本。
+先修改 `paste/web/public/config.json` 配置文件，之后使用 docker-compose 方式来部署容器服务，输入 `docker-compose up -d`　执行一键部署服务。如需开启百度统计，取消注释并替换 `paste/web/public/index.html` 中的百度统计脚本；如需开启 https 访问，需要先上传 Nginx 服务器类型 SSL 证书到 `paste/web/public/conf.d` 目录下，并修改 nginx.conf 配置文件。
 
 ## TODO
 
@@ -25,23 +25,23 @@
 
 ## 创建分享接口
 
-|Method|接口|说明|
-| :--- | :--- | :--- |
-| `POST` |/v1/paste|创建一个自定义过期时间的分享链接|
-| `POST` |/v1/paste/once|创建一个一次性分享链接，阅后即焚|
+| Method   | 接口           | 说明                             |
+| :------- | :------------- | :------------------------------- |
+| `POST` | /v1/paste      | 创建一个自定义过期时间的分享链接 |
+| `POST` | /v1/paste/once | 创建一个一次性分享链接，阅后即焚 |
 
 ### `POST /v1/paste | /v1/paste/once`
 
 **`request`**
 
-|字段|类型|是否必选|说明|
-| :--- | :--- | :--- | :--- |
-|langtype|string|Yes|代码语言类型，支持常见的编程语言类型|
-|content|string|Yes|分享的代码内容，最大支持十万个字符|
-|password|string|No|代码文本密码，可选项|
-|expireDate|int|No|过期时间，单位秒，可选项|
+| 字段       | 类型   | 是否必选 | 说明                                 |
+| :--------- | :----- | :------- | :----------------------------------- |
+| langtype   | string | Yes      | 代码语言类型，支持常见的编程语言类型 |
+| content    | string | Yes      | 分享的代码内容，最大支持十万个字符   |
+| password   | string | No       | 代码文本密码，可选项                 |
+| expireDate | int    | No       | 过期时间，单位秒，可选项             |
 
-``` http
+```http
 POST /v1/paste | v1/paste/once HTTP/1.1
 Content-Type: application/json
 
@@ -55,13 +55,13 @@ Content-Type: application/json
 
 **`response`**
 
-|字段|类型|是否必选|说明|
-| :--- | :--- | :--- | :--- |
-|code|int|Yes|201: 表示成功|
-|key|string|No|分享代码文本的key，可以用来访问代码内容|
-|message|string|No|错误描述信息|
+| 字段    | 类型   | 是否必选 | 说明                                    |
+| :------ | :----- | :------- | :-------------------------------------- |
+| code    | int    | Yes      | 201: 表示成功                           |
+| key     | string | No       | 分享代码文本的key，可以用来访问代码内容 |
+| message | string | No       | 错误描述信息                            |
 
-``` http
+```http
 HTTP/1.1 200 OK
 Content-Type: applicatoin/json
 
@@ -77,20 +77,20 @@ Content-Type: applicatoin/json
 
 **`request`**
 
-``` http
+```http
 GET /v1/paste/:abcd123456?password=123456 HTTP/1.1
 ```
 
 **`response`**
 
-|字段|类型|是否必选|说明|
-| :--- | :--- | :--- | :--- |
-|code|int|Yes|200: 表示成功|
-|langtype|string|No|代码语言类型|
-|content|string|No|分享的代码内容|
-|message|string|No|错误描述信息|
+| 字段     | 类型   | 是否必选 | 说明           |
+| :------- | :----- | :------- | :------------- |
+| code     | int    | Yes      | 200: 表示成功  |
+| langtype | string | No       | 代码语言类型   |
+| content  | string | No       | 分享的代码内容 |
+| message  | string | No       | 错误描述信息   |
 
-``` http
+```http
 HTTP/1.1 200 OK
 Content-Type: application/json
 
@@ -103,7 +103,7 @@ Content-Type: application/json
 
 # 感谢
 
-web 前端参考了开源项目 [gin-vue-admin](https://github.com/flipped-aurora/gin-vue-admin) & PasteMeFrontend
+web 前端参考了开源项目 [gin-vue-admin](https://github.com/flipped-aurora/gin-vue-admin)
 
 # 免责声明
 

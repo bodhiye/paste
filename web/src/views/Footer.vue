@@ -2,7 +2,6 @@
     <div class="row">
         <div class="col-md-12">
             <div class="footer">
-                <p><a id="one-word" @click="refresh">{{ oneWord }}</a></p>
                 <p>
                     <a>Copyright&nbsp;&copy;&nbsp;2021&nbsp;-&nbsp;{{ year }}&nbsp;&nbsp;|&nbsp;&nbsp;</a>
                     <a href="https://beian.miit.gov.cn" title="备案号" target="_blank">{{ $store.state.config.beian.number }}</a>
@@ -20,7 +19,7 @@
             </div>
         </div>
         <b-modal id="donate" hide-footer lazy>
-            <img src="https://file.paste.org.cn/sponsor.jpg" alt="赞赏">
+            <img src="../assets/img/sponsor.jpg" alt="赞赏">
         </b-modal>
     </div>
 </template>
@@ -31,24 +30,8 @@
         data() {
             return {
                 year: new Date().getFullYear(),
-                oneWord: this.getOne(),
             }
         },
-        mounted() {
-            this.getOne().then(result => {
-                this.oneWord = result;
-            })
-        },
-        methods: {
-            getOne() {
-                return this.api.get('https://v1.hitokoto.cn/?encode=text', false);
-            },
-            refresh() {
-                this.getOne().then(result => {
-                    this.oneWord = result;
-                });
-            }
-        }
     }
 </script>
 

@@ -1,10 +1,10 @@
-FROM node:14.17.3-alpine AS builder
+FROM node:alpine AS builder
 
 WORKDIR /web
 COPY web/ .
 
-RUN npm install -g cnpm --registry=https://registry.npm.taobao.org
-RUN cnpm install || npm install
+RUN npm config set registry http://registry.npm.taobao.org
+RUN npm install --legacy-peer-deps
 RUN npm run build
 
 FROM nginx:alpine
