@@ -12,9 +12,6 @@
                     <a v-b-modal.donate class="logo">
                         <img src="../assets/img/sponsor.svg" alt="打赏">
                     </a>
-                    <a href="https://www.aliyun.com/activity/ambassador/share-gift/goods?taskCode=xfyh2107&recordId=776261&userCode=oaiu4ezj" title="阿里云限量红包，上云就上阿里云，享数字化转型，市场占有率超过第 2-5 名总和" class="logo" target="_blank">
-                        <img src="../assets/img/aliyun.svg" alt="阿里云">
-                    </a>
                 </p>
             </div>
         </div>
