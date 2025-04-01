@@ -1,4 +1,4 @@
-FROM node:alpine AS builder
+FROM node:16-alpine AS builder
 
 WORKDIR /web
 COPY web/ .
