@@ -16,6 +16,7 @@ type Paste struct {
 	db.Paste
 }
 
+// 创建分享内容
 func (p *Paste) PostPaste(c *gin.Context) {
 	var (
 		ctx, log = util.EnsureWithLogger(c)
@@ -33,6 +34,7 @@ func (p *Paste) PostPaste(c *gin.Context) {
 		return
 	}
 
+	// 计算内容的字符数（而不是字节数，对多字节字符友好）
 	length = utf8.RuneCountInString(req.Content)
 	if length > 100000 {
 		log.Errorf("Content is too long: %d", length)
@@ -71,6 +73,7 @@ func (p *Paste) PostPaste(c *gin.Context) {
 	})
 }
 
+// 创建一次性分享内容
 func (p *Paste) PostPasteOnce(c *gin.Context) {
 	var (
 		ctx, log = util.EnsureWithLogger(c)
@@ -101,10 +104,13 @@ func (p *Paste) PostPasteOnce(c *gin.Context) {
 	entry := db.PasteEntry{
 		Langtype:  req.Langtype,
 		Content:   req.Content,
-		Password:  util.String2md5(req.Password),
 		ClientIP:  c.ClientIP(),
 		Once:      true,
 		CreatedAt: time.Now(),
+	}
+
+	if req.Password != "" {
+		entry.Password = util.String2md5(req.Password)		
 	}
 
 	key, err := p.Paste.Set(ctx, entry)
@@ -122,9 +128,11 @@ func (p *Paste) PostPasteOnce(c *gin.Context) {
 	})
 }
 
+// 获取分享内容
 func (p *Paste) GetPaste(c *gin.Context) {
 	var (
 		ctx, log      = util.EnsureWithLogger(c)
+		// 从URL路径参数获取key，从URL查询参数中获取passwor
 		key, password = c.Param("key"), c.Query("password")
 	)
 
