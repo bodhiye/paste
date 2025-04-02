@@ -112,7 +112,7 @@ func (p _Paste) Get(ctx context.Context, key, password string) (entry PasteEntry
     }
 
     // 如果 entry 设置了密码，验证提供的密码是否匹配
-    if entry.Password != "" && entry.Password != util.String2md5(password) {
+    if entry.Password != "" && entry.Password != util.String2bcrypt(password) {
         err = errors.New(proto.WrongPassword) // 密码错误
         return
     }

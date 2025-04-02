@@ -1,11 +1,12 @@
 package util
 
 import (
-	"crypto/md5"
-	"encoding/hex"
+	"log"
 	"math/rand"
 	"time"
 	"unsafe"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // 定义用于生成随机字符串的常量
@@ -38,9 +39,15 @@ func RandString(n int) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
-// String2md5 返回输入字符串的 MD5 哈希值的十六进制表示
-func String2md5(str string) string {
-	h := md5.New()
-	h.Write([]byte(str))
-	return hex.EncodeToString(h.Sum(nil)) // 返回哈希值的十六进制编码
+// String2bcryt 返回输入字符串的 MD5 哈希值的十六进制表示
+func String2bcrypt(str string) string {
+	// h := md5.New()
+	// h.Write([]byte(str))
+	// return hex.EncodeToString(h.Sum(nil))
+	hashedPassword,err := bcrypt.GenerateFromPassword([]byte(str),bcrypt.DefaultCost)
+	if err != nil {
+		log.Fatalf("Encryption failure: %+v", err)
+		return ""
+	}
+	return string(hashedPassword)
 }

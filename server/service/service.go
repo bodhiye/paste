@@ -52,7 +52,7 @@ func (p *Paste) PostPaste(c *gin.Context) {
 		CreatedAt: time.Now(),
 	}
 	if req.Password != "" {
-		entry.Password = util.String2md5(req.Password)
+		entry.Password = util.String2bcrypt(req.Password)
 	}
 	if req.ExpireDate > 0 {
 		entry.ExpireAt = time.Now().Add(time.Second * time.Duration(req.ExpireDate))
@@ -110,7 +110,7 @@ func (p *Paste) PostPasteOnce(c *gin.Context) {
 	}
 
 	if req.Password != "" {
-		entry.Password = util.String2md5(req.Password)		
+		entry.Password = util.String2bcrypt(req.Password)
 	}
 
 	key, err := p.Paste.Set(ctx, entry)
@@ -131,7 +131,7 @@ func (p *Paste) PostPasteOnce(c *gin.Context) {
 // 获取分享内容
 func (p *Paste) GetPaste(c *gin.Context) {
 	var (
-		ctx, log      = util.EnsureWithLogger(c)
+		ctx, log = util.EnsureWithLogger(c)
 		// 从URL路径参数获取key，从URL查询参数中获取passwor
 		key, password = c.Param("key"), c.Query("password")
 	)
