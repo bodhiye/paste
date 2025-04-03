@@ -9,3 +9,9 @@ paste:
     host: mongodb://mongo:27017
     db: paste
     coll: paste
+
+limit:
+  code_length: 100000 #字符
+  code_count: 5
+  image_size: 10 #MB
+  image_count: 5

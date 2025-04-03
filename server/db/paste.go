@@ -68,6 +68,11 @@ func (p _Paste) Init(ctx context.Context) error {
 			Options: options.Index().SetUnique(true), 
 		},
 		{
+			Keys: bson.D{
+				{Key: "created_at", Value: -1}, // 按创建时间降序排列
+			},
+		},
+		{
 			// 创建 expire_at 的过期索引，当文档的 expire_at 字段到达指定时间后，MongoDB 会自动删除该文档
 			Keys:    bson.D{{Key: "expire_at", Value: 1}},
 			Options: options.Index().SetExpireAfterSeconds(0), // 设置过期时间为到达 expire_at 字段立即过期
@@ -113,13 +118,13 @@ func (p _Paste) Get(ctx context.Context, key, password string) (entry PasteEntry
 
     // 如果 entry 设置了密码，验证提供的密码是否匹配
     if entry.Password != "" && entry.Password != util.String2bcrypt(password) {
-        err = errors.New(proto.WrongPassword) // 密码错误
+        err = errors.New(proto.ErrWrongPassword) // 密码错误
         return
     }
 
     // 检查 entry 是否已过期
     if !entry.ExpireAt.IsZero() && time.Now().After(entry.ExpireAt) {
-        err = errors.New(proto.ContentExpired) // 内容已过期
+        err = errors.New(proto.ErrContentExpired) // 内容已过期
         return
     }
 
