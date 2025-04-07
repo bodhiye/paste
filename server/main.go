@@ -36,11 +36,12 @@ func main() {
 	paste.Use(middleware.ReqID)
 
 	// 初始化数据库
-	pasteDB, err := db.NewPaste(ctx, viper.Sub("paste.mgo")) //viper.Sub从全局配置中提取键为“paste.mgo"的部分，并返回一个新的viper实例
+	pasteDB, err := db.NewPaste(ctx, viper.Sub("paste.mgo")) //viper.Sub从全局配置中提取键为"paste.mgo"的部分，并返回一个新的viper实例
 	if err != nil {
 		log.Errorf("init paste db failed: %+v", err)
 		return
 	}
+
 	// 初始化路由
 	router.Init(paste, pasteDB)
 

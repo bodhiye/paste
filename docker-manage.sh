@@ -5,15 +5,17 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
 # 显示菜单
 show_menu() {
     echo -e "${GREEN}Docker Compose 管理脚本${NC}"
     echo "------------------------"
-    echo -e "${BLUE}1. 启动所有服务"
-    echo "2. 停止服务"
-    echo "3. 停止服务并删除所有数据"
-    echo "4. 退出"
+    echo -e "${BLUE}1. 启动所有服务${NC}"
+    echo -e "${BLUE}2. 停止服务${NC}"
+    echo -e "${BLUE}3. 停止服务并删除所有数据${NC}"
+    echo -e "${BLUE}4. 重新构建并启动服务${NC}"
+    echo -e "${BLUE}5. 退出${NC}"
 }
 
 # 启动服务
@@ -59,10 +61,31 @@ stop_and_clean() {
     fi
 }
 
+# 重新构建服务
+rebuild_services() {
+    echo -e "${YELLOW}正在停止并删除所有容器...${NC}"
+    docker-compose down
+    echo -e "${GREEN}正在重新构建服务...${NC}"
+    docker-compose build --no-cache
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}构建成功，正在启动服务...${NC}"
+        docker-compose up -d
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}服务启动成功！${NC}"
+            echo -e "${BLUE}您可以通过以下地址访问服务：${NC}"
+            echo -e "${BLUE}➜ http://127.0.0.1:80${NC}"
+        else
+            echo -e "${RED}服务启动失败！${NC}"
+        fi
+    else
+        echo -e "${RED}构建失败！${NC}"
+    fi
+}
+
 # 主循环
 while true; do
     show_menu
-    read -p "请选择操作 (1-4): " choice
+    read -p "请选择操作 (1-5): " choice
     case $choice in
         1)
             start_services
@@ -74,6 +97,9 @@ while true; do
             stop_and_clean
             ;;
         4)
+            rebuild_services
+            ;;
+        5)
             echo -e "${GREEN}再见！${NC}"
             exit 0
             ;;

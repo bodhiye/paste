@@ -19,7 +19,11 @@ ENV TZ=Asia/Shanghai
 
 WORKDIR /root
 COPY --from=builder /go/bin/server ./
-COPY /server/config.yaml ./
+COPY /server/config.yaml /root/config.yaml
+
+# 创建日志目录并设置权限
+RUN mkdir -p /app/logs && \
+    chmod 755 /app/logs
 
 EXPOSE 8000
 

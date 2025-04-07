@@ -15,17 +15,22 @@ services:
     image: server
     depends_on:
       - mongo
-    restart: always
+    restart: unless-stopped
     ports:
       - "8000:8000"
     links:
       - mongo
+    volumes:
+      - ./logs:/app/logs
     logging:
       driver: json-file
       options:
-        max-size: "20m" # 单个文件大小为20m
-        max-file: "10" # 最多10个文件
-  
+        max-size: "20m"
+        max-file: "10"
+    environment:
+      - TZ=Asia/Shanghai
+      - LOG_DIR=/app/logs
+
   web:
     build:
       context: .
@@ -39,4 +44,4 @@ services:
       - "443:443"
     links:
       - server
-    command: [ 'nginx', '-g', 'daemon off;' ]
+    command: ["nginx", "-g", "daemon off;"]
