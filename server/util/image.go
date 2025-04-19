@@ -71,9 +71,6 @@ func UploadImages(c *gin.Context, log *logrus.Entry) (images []proto.ImageFile, 
 		return nil, fmt.Errorf(proto.ErrTooManyCount, LimitConfig.ImagesCount())
 	}
 
-	// 确保上传目录存在
-	uploadDir := GetUploadDir()
-
 	// 存储已上传的文件路径，用于出错时清理
 	var uploadedFiles []string
 
@@ -83,9 +80,6 @@ func UploadImages(c *gin.Context, log *logrus.Entry) (images []proto.ImageFile, 
 		fileSizeMB := fileHeader.Size / (1024 * 1024)
 		if fileSizeMB > int64(LimitConfig.ImagesSize()) {
 			log.Errorf("图片太大: %d MB", fileSizeMB)
-			if err := DeleteFiles(uploadedFiles); err != nil {
-				log.Errorf("删除图片失败: %v", err)
-			}
 			return nil, fmt.Errorf(proto.ErrOverMaxSize, LimitConfig.ImagesSize())
 		}
 
@@ -93,9 +87,6 @@ func UploadImages(c *gin.Context, log *logrus.Entry) (images []proto.ImageFile, 
 		contentType := fileHeader.Header.Get("Content-Type")
 		if !strings.HasPrefix(contentType, "image/") {
 			log.Errorf("不支持的文件类型: %s", contentType)
-			if err := DeleteFiles(uploadedFiles); err != nil {
-				log.Errorf("删除图片失败: %v", err)
-			}
 			return nil, errors.New(proto.ErrInvalidFileType)
 		}
 
@@ -107,7 +98,9 @@ func UploadImages(c *gin.Context, log *logrus.Entry) (images []proto.ImageFile, 
 			fileExt)
 
 		// 文件完整路径
-		filePath := filepath.Join(uploadDir, newFilename)
+		filePath := GetImagePath(newFilename)
+		// 记录已上传文件路径
+		uploadedFiles = append(uploadedFiles, filePath)
 
 		// 使用互斥锁保护文件保存操作
 		imageMutex.Lock()
@@ -121,9 +114,6 @@ func UploadImages(c *gin.Context, log *logrus.Entry) (images []proto.ImageFile, 
 			}
 			return nil, err
 		}
-
-		// 记录已上传文件路径
-		uploadedFiles = append(uploadedFiles, filePath)
 
 		// 添加到返回结果
 		images = append(images, proto.ImageFile{

@@ -11,8 +11,8 @@ import (
 
 // StorageConfig 存储相关配置
 type StorageConfig struct {
-	UploadDir string
-	URLPrefix string
+	uploadDir string
+	uRLPrefix string
 }
 
 var (
@@ -26,12 +26,12 @@ func InitializeStorage() {
 	defer storageMutex.Unlock()
 
 	storageConfig = StorageConfig{
-		UploadDir: viper.GetString("paste.storage.upload_dir"),
-		URLPrefix: viper.GetString("paste.storage.url_prefix"),
+		uploadDir: viper.GetString("paste.storage.upload_dir"),
+		uRLPrefix: viper.GetString("paste.storage.url_prefix"),
 	}
 
 	// 确保上传目录存在
-	if err := os.MkdirAll(storageConfig.UploadDir, 0755); err != nil {
+	if err := os.MkdirAll(storageConfig.uploadDir, 0755); err != nil {
 		log.Fatalf("Failed to create upload directory: %v", err)
 	}
 }
@@ -40,26 +40,26 @@ func InitializeStorage() {
 func GetUploadDir() string {
 	storageMutex.RLock()
 	defer storageMutex.RUnlock()
-	return storageConfig.UploadDir
+	return storageConfig.uploadDir
 }
 
 // GetURLPrefix 获取URL前缀
 func GetURLPrefix() string {
 	storageMutex.RLock()
 	defer storageMutex.RUnlock()
-	return storageConfig.URLPrefix
+	return storageConfig.uRLPrefix
 }
 
 // GetImageURL 根据文件名获取完整的URL
 func GetImageURL(filename string) string {
 	storageMutex.RLock()
 	defer storageMutex.RUnlock()
-	return storageConfig.URLPrefix + filename
+	return storageConfig.uRLPrefix + filename
 }
 
 // GetImagePath 根据文件名获取完整的文件路径
 func GetImagePath(filename string) string {
 	storageMutex.RLock()
 	defer storageMutex.RUnlock()
-	return filepath.Join(storageConfig.UploadDir, filename)
+	return filepath.Join(storageConfig.uploadDir, filename)
 }
