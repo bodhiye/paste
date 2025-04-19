@@ -261,35 +261,6 @@ func (p *Paste) GetPaste(c *gin.Context) {
 		entry.Images = []proto.ImageFile{}
 	}
 
-	// 如果是一次性内容且有图片，启动异步任务删除图片
-	// 注意：这里不再检查Once字段，因为我们改进的Get方法已经处理了一次性文档的删除
-	// 但我们仍需要删除文件系统上的图片文件
-	if len(entry.Images) > 0 {
-		// 创建图片URL的副本以避免竞态条件
-		imagesToDelete := make([]string, len(entry.Images))
-		for i, img := range entry.Images {
-			imagesToDelete[i] = img.URL
-		}
-
-		// 异步删除图片文件，不阻塞响应
-		go func(images []string) {
-			var wg sync.WaitGroup
-
-			for _, imageURL := range images {
-				wg.Add(1)
-				go func(url string) {
-					defer wg.Done()
-					if err := util.DeleteImage(url); err != nil {
-						log.Errorf("异步删除图片失败: %v, URL: %s", err, url)
-					}
-				}(imageURL)
-			}
-
-			// 等待所有删除操作完成
-			wg.Wait()
-		}(imagesToDelete)
-	}
-
 	// 返回成功响应
 	c.JSON(http.StatusOK, proto.GetPasteResp{
 		Code:     http.StatusOK,
