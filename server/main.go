@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -29,11 +31,32 @@ func main() {
 	// 加载配置文件
 	util.LoadConfig("config")
 
+	// 初始化 Limits 配置
+	util.InitializeLimits()
+
+	// 初始化 图片存储 配置
+	util.InitializeStorage()
+
+	// 检查 paste.mgo 是否存在
+	if !viper.IsSet("paste.mgo") {
+		log.Fatalf("paste.mgo is not set in the configuration")
+	}
+
+	fmt.Println("test2")
+
+	// 创建上传目录
+	if err := os.MkdirAll("uploads", 0755); err != nil {
+		log.Fatalf("Failed to create upload directory: %v", err)
+	}
+
 	// 注入中间件
 	paste := gin.New()
 	paste.Use(gin.Recovery()) // gin.Recovery 是gin自带中间件，用于捕获panic并返回500错误
 	paste.Use(middleware.LogInfo)
 	paste.Use(middleware.ReqID)
+
+	// 添加静态文件服务
+	paste.Static("/uploads", "./uploads")
 
 	// 初始化数据库
 	pasteDB, err := db.NewPaste(ctx, viper.Sub("paste.mgo")) //viper.Sub从全局配置中提取键为“paste.mgo"的部分，并返回一个新的viper实例
@@ -43,6 +66,11 @@ func main() {
 	}
 	// 初始化路由
 	router.Init(paste, pasteDB)
+
+	// 初始化图片清理器
+	imageCleaner := util.NewImageCleaner(pasteDB.GetCollection(), 1*time.Hour)
+	imageCleaner.Start()
+	defer imageCleaner.Stop()
 
 	// 创建服务器
 	srv := &http.Server{

@@ -5,6 +5,7 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+NC='\033[0m'  # 添加NC变量用于重置颜色
 
 # 显示菜单
 show_menu() {
@@ -13,7 +14,8 @@ show_menu() {
     echo -e "${BLUE}1. 启动所有服务"
     echo "2. 停止服务"
     echo "3. 停止服务并删除所有数据"
-    echo "4. 退出"
+    echo "4. 删除所有数据、容器和镜像"
+    echo "5. 退出"
 }
 
 # 启动服务
@@ -59,10 +61,32 @@ stop_and_clean() {
     fi
 }
 
+# 删除所有数据、容器和镜像
+remove_all() {
+    echo -e "${RED}警告：这将删除所有容器、镜像和数据！此操作不可恢复！${NC}"
+    read -p "确定要继续吗？(y/n): " confirm
+    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+        echo -e "${YELLOW}正在停止服务并清理所有数据...${NC}"
+        # 停止并删除所有容器
+        docker-compose down -v
+        # 删除所有镜像
+        docker-compose down --rmi all
+        # 删除MongoDB数据目录
+        rm -rf ../mongodb/db/*
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}所有容器、镜像和数据已清理！${NC}"
+        else
+            echo -e "${RED}操作失败！${NC}"
+        fi
+    else
+        echo -e "${YELLOW}操作已取消${NC}"
+    fi
+}
+
 # 主循环
 while true; do
     show_menu
-    read -p "请选择操作 (1-4): " choice
+    read -p "请选择操作 (1-5): " choice
     case $choice in
         1)
             start_services
@@ -74,6 +98,9 @@ while true; do
             stop_and_clean
             ;;
         4)
+            remove_all
+            ;;
+        5)
             echo -e "${GREEN}再见！${NC}"
             exit 0
             ;;
