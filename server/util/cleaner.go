@@ -57,6 +57,8 @@ func (ic *ImageCleaner) Stop() {
 
 // Clean 执行清理操作
 func (ic *ImageCleaner) Clean() error {
+    
+	
 	// 获取锁以确保只有一个清理操作在进行
 	ic.mutex.Lock()
 	defer ic.mutex.Unlock()
@@ -111,8 +113,7 @@ func (ic *ImageCleaner) Clean() error {
 		if !validFiles[filename] {
 			// 使用DeleteImage函数而不是直接删除文件
 			if err := DeleteImage(GetImageURL(filename)); err != nil {
-				log.Errorf("删除孤儿图片失败 %s: %v", filepath.Join(uploadDir, filename), err)
-				continue
+				log.Errorf("删除孤儿图片失败: %v", err)
 			}
 			log.Infof("已删除孤儿图片: %s", filepath.Join(uploadDir, filename))
 		}
