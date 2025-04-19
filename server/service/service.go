@@ -2,15 +2,18 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"paste.org.cn/paste/server/db"
@@ -20,6 +23,12 @@ import (
 
 type Paste struct {
 	db.Paste
+}
+
+type tempImage struct {
+	TempPath  string
+	FinalPath string
+	ImageFile proto.ImageFile
 }
 
 // 创建分享内容
@@ -83,14 +92,14 @@ func (p *Paste) PostPaste(c *gin.Context) {
 		}
 	}
 
-	req.Images, err = getImages(c, log)
+	req.Images, err = uploadImages(c, log)
 	if err != nil {
 		log.Errorf("获取图片失败: %+v", err)
 		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
 			Code:    http.StatusBadRequest,
 			Message: proto.ErrUploadFailed,
 		})
-		return
+		return	
 	}
 
 	entry := db.PasteEntry{
@@ -174,7 +183,7 @@ func (p *Paste) PostPasteOnce(c *gin.Context) {
 	}
 
 	// 获取图片
-	req.Images, err = getImages(c, log)
+	req.Images, err = uploadImages(c, log)
 	if err != nil {
 		log.Errorf("获取图片失败: %+v", err)
 		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
@@ -252,14 +261,33 @@ func (p *Paste) GetPaste(c *gin.Context) {
 		entry.Images = []proto.ImageFile{}
 	}
 
-	// 如果是一次性内容，在返回之前删除所有相关的图片
-	if entry.Once {
-		for _, img := range entry.Images {
-			if err := util.DeleteImage(img.URL); err != nil {
-				log.Errorf("删除图片失败: %v, URL: %s", err, img.URL)
-				continue
-			}
+	// 如果是一次性内容且有图片，启动异步任务删除图片
+	// 注意：这里不再检查Once字段，因为我们改进的Get方法已经处理了一次性文档的删除
+	// 但我们仍需要删除文件系统上的图片文件
+	if len(entry.Images) > 0 {
+		// 创建图片URL的副本以避免竞态条件
+		imagesToDelete := make([]string, len(entry.Images))
+		for i, img := range entry.Images {
+			imagesToDelete[i] = img.URL
 		}
+
+		// 异步删除图片文件，不阻塞响应
+		go func(images []string) {
+			var wg sync.WaitGroup
+
+			for _, imageURL := range images {
+				wg.Add(1)
+				go func(url string) {
+					defer wg.Done()
+					if err := util.DeleteImage(url); err != nil {
+						log.Errorf("异步删除图片失败: %v, URL: %s", err, url)
+					}
+				}(imageURL)
+			}
+
+			// 等待所有删除操作完成
+			wg.Wait()
+		}(imagesToDelete)
 	}
 
 	// 返回成功响应
@@ -271,87 +299,134 @@ func (p *Paste) GetPaste(c *gin.Context) {
 }
 
 // 获取图片
-func getImages(c *gin.Context, log *logrus.Entry) (images []proto.ImageFile, err error) {
+func uploadImages(c *gin.Context, log *logrus.Entry) (images []proto.ImageFile, err error) {
 	// 单独处理文件上传
 	form, err := c.MultipartForm()
-	if err == nil && form != nil {
-		files := form.File["images"]
-		if len(files) > 0 {
-			// 检查图片数量限制
-			if len(files) > util.LimitConfig.ImagesCount() {
-				log.Errorf("图片数量过多: %d", len(files))
-				c.JSON(http.StatusBadRequest, proto.PostPasteResp{
-					Code:    http.StatusBadRequest,
-					Message: fmt.Sprintf(proto.ErrTooManyCount, util.LimitConfig.ImagesCount()),
-				})
-				return nil, err
-			}
+	if err != nil || form == nil {
+		return nil, nil // 没有文件上传，不是错误
+	}
 
-			// 确保上传目录存在
-			if err := os.MkdirAll("uploads", 0755); err != nil {
-				log.Errorf("创建上传目录失败: %+v", err)
-				c.JSON(http.StatusInternalServerError, proto.PostPasteResp{
-					Code:    http.StatusInternalServerError,
-					Message: proto.ErrPasteFailed,
-				})
-				return nil, err
-			}
+	files := form.File["images"]
+	if len(files) == 0 {
+		return nil, nil // 没有图片，不是错误
+	}
 
-			// 处理每个图片
-			for _, fileHeader := range files {
-				// 检查文件大小
-				fileSizeMB := fileHeader.Size / (1024 * 1024)
-				if fileSizeMB > int64(util.LimitConfig.ImagesSize()) {
-					log.Errorf("图片太大: %d MB", fileSizeMB)
-					c.JSON(http.StatusBadRequest, proto.PostPasteResp{
-						Code:    http.StatusBadRequest,
-						Message: fmt.Sprintf(proto.ErrOverMaxSize, util.LimitConfig.ImagesSize()),
-					})
-					return nil, err
-				}
+	// 检查图片数量限制
+	if len(files) > util.LimitConfig.ImagesCount() {
+		log.Errorf("图片数量过多: %d", len(files))
+		return nil, fmt.Errorf(proto.ErrTooManyCount, util.LimitConfig.ImagesCount())
+	}
 
-				// 检查 MIME 类型
-				contentType := fileHeader.Header.Get("Content-Type")
-				if !strings.HasPrefix(contentType, "image/") {
-					log.Errorf("不支持的文件类型: %s", contentType)
-					c.JSON(http.StatusBadRequest, proto.PostPasteResp{
-						Code:    http.StatusBadRequest,
-						Message: proto.ErrInvalidFileType,
-					})
-					return nil, err
-				}
+	// 确保上传目录存在 - 使用storage中的函数确保线程安全
+	uploadDir := util.GetUploadDir()
 
-				// 生成唯一文件名 (时间戳 + 随机字符串 + 原始扩展名)
-				fileExt := filepath.Ext(fileHeader.Filename)
-				newFilename := fmt.Sprintf("%d_%s%s",
-					time.Now().UnixNano(),
-					util.RandString(8),
-					fileExt)
-				savePath := util.GetImagePath(newFilename)
+	// 临时图片列表，用于跟踪暂存的图片
+	var tempImages []tempImage
 
-				// 保存文件
-				if err := c.SaveUploadedFile(fileHeader, savePath); err != nil {
-					log.Errorf("保存文件失败: %+v", err)
-					c.JSON(http.StatusInternalServerError, proto.PostPasteResp{
-						Code:    http.StatusInternalServerError,
-						Message: proto.ErrUploadFailed,
-					})
-					return nil, err
-				}
-
-				// 创建图片记录
-				imageFile := proto.ImageFile{
-					Filename:    fileHeader.Filename,
-					URL:         util.GetImageURL(newFilename),
-					Size:        fileHeader.Size,
-					ContentType: contentType,
-				}
-
-				// 添加到请求
-				images = append(images, imageFile)
-			}
+	// 处理每个图片
+	for _, fileHeader := range files {
+		// 检查文件大小
+		fileSizeMB := fileHeader.Size / (1024 * 1024)
+		if fileSizeMB > int64(util.LimitConfig.ImagesSize()) {
+			log.Errorf("图片太大: %d MB", fileSizeMB)
+			// 清理已上传的临时文件
+			cleanupTempImages(tempImages)
+			return nil, fmt.Errorf(proto.ErrOverMaxSize, util.LimitConfig.ImagesSize())
 		}
+
+		// 检查 MIME 类型
+		contentType := fileHeader.Header.Get("Content-Type")
+		if !strings.HasPrefix(contentType, "image/") {
+			log.Errorf("不支持的文件类型: %s", contentType)
+			// 清理已上传的临时文件
+			cleanupTempImages(tempImages)
+			return nil, errors.New(proto.ErrInvalidFileType)
+		}
+
+		// 生成一个更独特的唯一文件名，减少冲突可能性
+		fileExt := filepath.Ext(fileHeader.Filename)
+		newFilename := fmt.Sprintf("%d_%s%s",
+			time.Now().UnixNano(),
+			uuid.NewString(), // 使用完整的UUID
+			fileExt)
+
+		// 生成临时文件路径和最终文件路径
+		tempFilename := "temp_" + newFilename
+		tempPath := filepath.Join(uploadDir, tempFilename)
+		finalPath := filepath.Join(uploadDir, newFilename)
+
+		// 保存到临时文件
+		if err := c.SaveUploadedFile(fileHeader, tempPath); err != nil {
+			log.Errorf("保存文件失败: %+v", err)
+			// 清理已上传的临时文件
+			cleanupTempImages(tempImages)
+			return nil, err
+		}
+
+		// 创建图片记录
+		imageFile := proto.ImageFile{
+			Filename:    fileHeader.Filename,
+			URL:         util.GetImageURL(newFilename),
+			Size:        fileHeader.Size,
+			ContentType: contentType,
+		}
+
+		// 添加到临时列表
+		tempImages = append(tempImages, tempImage{
+			TempPath:  tempPath,
+			FinalPath: finalPath,
+			ImageFile: imageFile,
+		})
+	}
+
+	// 创建同步等待组和错误通道，以便并发移动文件
+	var wg sync.WaitGroup
+	errorCh := make(chan error, len(tempImages))
+	imagesMutex := sync.Mutex{}
+
+	// 所有图片都已成功上传到临时位置，现在并发移动到最终位置
+	for _, img := range tempImages {
+		wg.Add(1)
+		go func(img tempImage) {
+			defer wg.Done()
+
+			// 移动文件
+			if err := os.Rename(img.TempPath, img.FinalPath); err != nil {
+				log.Errorf("移动临时文件失败: %+v", err)
+				errorCh <- err
+				return
+			}
+
+			// 线程安全地添加到最终结果
+			imagesMutex.Lock()
+			images = append(images, img.ImageFile)
+			imagesMutex.Unlock()
+		}(img)
+	}
+
+	// 等待所有移动操作完成
+	wg.Wait()
+	close(errorCh)
+
+	// 检查是否有错误
+	select {
+	case err := <-errorCh:
+		// 有错误发生，清理所有文件
+		for _, img := range tempImages {
+			os.Remove(img.TempPath)  // 删除可能仍存在的临时文件
+			os.Remove(img.FinalPath) // 删除可能已移动的文件
+		}
+		return nil, err
+	default:
+		// 没有错误，继续处理
 	}
 
 	return images, nil
+}
+
+// 辅助函数，清理临时图片文件
+func cleanupTempImages(tempImages []tempImage) {
+	for _, img := range tempImages {
+		os.Remove(img.TempPath)
+	}
 }

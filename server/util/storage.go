@@ -3,6 +3,7 @@ package util
 import (
 	"os"
 	"path/filepath"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -14,10 +15,16 @@ type StorageConfig struct {
 	URLPrefix string
 }
 
-var storageConfig StorageConfig
+var (
+	storageConfig StorageConfig
+	storageMutex  sync.RWMutex // 用于保护文件操作的读写锁
+)
 
 // InitializeStorage 初始化存储配置
 func InitializeStorage() {
+	storageMutex.Lock()
+	defer storageMutex.Unlock()
+
 	storageConfig = StorageConfig{
 		UploadDir: viper.GetString("paste.storage.upload_dir"),
 		URLPrefix: viper.GetString("paste.storage.url_prefix"),
@@ -31,20 +38,28 @@ func InitializeStorage() {
 
 // GetUploadDir 获取上传目录
 func GetUploadDir() string {
+	storageMutex.RLock()
+	defer storageMutex.RUnlock()
 	return storageConfig.UploadDir
 }
 
 // GetURLPrefix 获取URL前缀
 func GetURLPrefix() string {
+	storageMutex.RLock()
+	defer storageMutex.RUnlock()
 	return storageConfig.URLPrefix
 }
 
 // GetImageURL 根据文件名获取完整的URL
 func GetImageURL(filename string) string {
+	storageMutex.RLock()
+	defer storageMutex.RUnlock()
 	return storageConfig.URLPrefix + filename
 }
 
 // GetImagePath 根据文件名获取完整的文件路径
 func GetImagePath(filename string) string {
+	storageMutex.RLock()
+	defer storageMutex.RUnlock()
 	return filepath.Join(storageConfig.UploadDir, filename)
 }

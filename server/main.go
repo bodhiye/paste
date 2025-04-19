@@ -64,6 +64,19 @@ func main() {
 		log.Errorf("init paste db failed: %+v", err)
 		return
 	}
+
+	// 在程序结束时断开MongoDB连接
+	mongoClient := db.GetMongoClient()
+	defer func() {
+		if mongoClient != nil {
+			if err := mongoClient.Disconnect(context.Background()); err != nil {
+				log.Errorf("failed to disconnect from MongoDB: %v", err)
+			} else {
+				log.Info("successfully disconnected from MongoDB")
+			}
+		}
+	}()
+
 	// 初始化路由
 	router.Init(paste, pasteDB)
 

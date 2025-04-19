@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -18,6 +19,7 @@ type ImageCleaner struct {
 	db       *mongo.Collection // MongoDB集合
 	interval time.Duration     // 清理间隔
 	stopChan chan struct{}     // 停止信号
+	mutex    sync.Mutex        // 清理操作的互斥锁
 }
 
 // NewImageCleaner 创建一个新的图片清理器
@@ -55,6 +57,10 @@ func (ic *ImageCleaner) Stop() {
 
 // Clean 执行清理操作
 func (ic *ImageCleaner) Clean() error {
+	// 获取锁以确保只有一个清理操作在进行
+	ic.mutex.Lock()
+	defer ic.mutex.Unlock()
+
 	// 获取所有图片文件
 	uploadDir := GetUploadDir()
 	files, err := os.ReadDir(uploadDir)
@@ -103,12 +109,12 @@ func (ic *ImageCleaner) Clean() error {
 	// 删除没有对应数据库记录的文件
 	for filename := range fileMap {
 		if !validFiles[filename] {
-			filePath := filepath.Join(uploadDir, filename)
-			if err := os.Remove(filePath); err != nil {
-				log.Errorf("删除孤儿图片失败 %s: %v", filePath, err)
+			// 使用DeleteImage函数而不是直接删除文件
+			if err := DeleteImage(GetImageURL(filename)); err != nil {
+				log.Errorf("删除孤儿图片失败 %s: %v", filepath.Join(uploadDir, filename), err)
 				continue
 			}
-			log.Infof("已删除孤儿图片: %s", filePath)
+			log.Infof("已删除孤儿图片: %s", filepath.Join(uploadDir, filename))
 		}
 	}
 

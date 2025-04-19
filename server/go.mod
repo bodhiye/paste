@@ -23,6 +23,7 @@ require (
 	github.com/golang/protobuf v1.3.3 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/google/uuid v1.6.0
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.9 // indirect
