@@ -108,6 +108,7 @@ func (p _Paste) Init(ctx context.Context) error {
 	return err // 返回创建索引过程中发生的错误
 }
 
+// GetCollection 返回 MongoDB 的集合
 func (p _Paste) GetCollection() *mongo.Collection {
 	return p.Collection
 }

@@ -2,13 +2,11 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -36,18 +34,6 @@ func main() {
 
 	// 初始化 图片存储 配置
 	util.InitializeStorage()
-
-	// 检查 paste.mgo 是否存在
-	if !viper.IsSet("paste.mgo") {
-		log.Fatalf("paste.mgo is not set in the configuration")
-	}
-
-	fmt.Println("test2")
-
-	// 创建上传目录
-	if err := os.MkdirAll("uploads", 0755); err != nil {
-		log.Fatalf("Failed to create upload directory: %v", err)
-	}
 
 	// 注入中间件
 	paste := gin.New()
@@ -81,13 +67,13 @@ func main() {
 	router.Init(paste, pasteDB)
 
 	// 初始化图片清理器
-	imageCleaner := util.NewImageCleaner(pasteDB.GetCollection(), 1*time.Hour)
+	imageCleaner := util.NewImageCleaner(pasteDB.GetCollection())
 	imageCleaner.Start()
 	defer imageCleaner.Stop()
 
 	// 创建服务器
 	srv := &http.Server{
-		Addr:    util.GetServerHost(viper.GetString("server.host")),
+		Addr:    util.GetServerHost(),
 		Handler: paste,
 	}
 	// 启动服务器

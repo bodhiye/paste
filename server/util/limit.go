@@ -42,15 +42,12 @@ func (lc *limitConfig) ImagesCount() int {
 }
 
 // InitializeLimits 从 Viper 加载 limit 配置
-// 这个函数应该在 LoadConfig 之后被调用
 func InitializeLimits() {
 	LimitConfig.mu.Lock()
 	defer LimitConfig.mu.Unlock()
 
 	newViper := viper.Sub("limit")
 	if newViper == nil {
-		// 不再 Fatal，改为 Errorf，让调用者决定如何处理
-		// 或者可以考虑提供默认值
 		log.Errorf("viper sub for 'limit' failed, using default values")
 		setDefaultLimits()
 		return

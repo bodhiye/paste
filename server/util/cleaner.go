@@ -8,6 +8,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
@@ -23,10 +24,10 @@ type ImageCleaner struct {
 }
 
 // NewImageCleaner 创建一个新的图片清理器
-func NewImageCleaner(db *mongo.Collection, interval time.Duration) *ImageCleaner {
+func NewImageCleaner(db *mongo.Collection) *ImageCleaner {
 	return &ImageCleaner{
 		db:       db,
-		interval: interval,
+		interval: time.Duration(viper.GetInt("cleaner.interval"))*time.Minute,
 		stopChan: make(chan struct{}),
 	}
 }
@@ -57,15 +58,12 @@ func (ic *ImageCleaner) Stop() {
 
 // Clean 执行清理操作
 func (ic *ImageCleaner) Clean() error {
-    
-	
 	// 获取锁以确保只有一个清理操作在进行
 	ic.mutex.Lock()
 	defer ic.mutex.Unlock()
 
 	// 获取所有图片文件
-	uploadDir := GetUploadDir()
-	files, err := os.ReadDir(uploadDir)
+	files, err := os.ReadDir(GetUploadDir())
 	if err != nil {
 		return err
 	}
@@ -115,7 +113,7 @@ func (ic *ImageCleaner) Clean() error {
 			if err := DeleteImage(GetImageURL(filename)); err != nil {
 				log.Errorf("删除孤儿图片失败: %v", err)
 			}
-			log.Infof("已删除孤儿图片: %s", filepath.Join(uploadDir, filename))
+			log.Infof("已删除孤儿图片: %s", GetImagePath(filename))
 		}
 	}
 

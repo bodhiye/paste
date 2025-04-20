@@ -248,27 +248,6 @@ func (p *Paste) GetPaste(c *gin.Context) {
 		entry.Images = []proto.ImageFile{}
 	}
 
-	// 如果是一次性内容且有图片，延迟一段时间后再删除图片
-	// 确保前端有足够的时间加载图片
-	if len(entry.Images) > 0 {
-		// 创建图片URL的副本以避免竞态条件
-		imagesToDelete := make([]string, len(entry.Images))
-		for i, img := range entry.Images {
-			imagesToDelete[i] = img.URL
-		}
-
-		// 延迟删除图片文件
-		go func(images []string) {
-			// 等待5分钟，给前端足够的时间加载图片
-			time.Sleep(5 * time.Minute)
-
-			// 删除图片文件 - 使用新的批量删除函数
-			if err := util.DeleteFiles(images); err != nil {
-				log.Errorf("延迟删除图片失败: %v", err)
-			}
-		}(imagesToDelete)
-	}
-
 	// 返回成功响应
 	c.JSON(http.StatusOK, proto.GetPasteResp{
 		Code:     http.StatusOK,
