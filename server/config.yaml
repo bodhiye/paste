@@ -9,14 +9,22 @@ paste:
     host: mongodb://mongo:27017
     db: paste
     coll: paste
-  storage:
-    upload_dir: uploads # 图片上传目录
-    url_prefix: /uploads/ # 图片访问URL前缀
+# 图片存储配置
+storage:
+  type: cloud # 存储类型: base64, cloud
+  # cloud配置
+  cloud:
+    provider: "tencent" # 云存储提供商
+    region: "ap-guangzhou" # 云存储区域
+    bucket: "" # 云存储桶
+    secret_id: "" # 云存储访问密钥
+    secret_key: "" # 云存储密钥
+    url_expire_at: 15 # 图片签名URL有效期 分钟
 
 limit:
   snippets_length: 100000 #字符
   snippets_count: 5
-  images_size: 10 #MB
+  images_size: 5 #MB
   images_count: 5
 
 cleaner:

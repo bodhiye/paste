@@ -2,7 +2,10 @@ package util
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"net/http"
+	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus" // 用logrus第三方开源库来替换标准库log包，logrus兼容标准库log包的所有API
@@ -44,4 +47,16 @@ func ShutdownServer(srv *http.Server) {
 		log.Fatalf("Server Shutdown: %+v", err)
 	}
 	log.Println("Server exiting")
+}
+
+// GetServerHost 尝试替换原本从配置文件中设置的 服务器地址的端口号
+func GetServerHost(host string) string {
+	// 获取环境变量 PORT_HTTP 的值，通常用于指定服务器监听的端口号
+	p := os.Getenv("PORT_HTTP")
+	// 使用 net.SplitHostPort 函数将传入的地址 sh 分割为主机名（h）和端口号（_）
+	h, _, err := net.SplitHostPort(host)
+	if err != nil || len(p) == 0 {
+		return host
+	}
+	return fmt.Sprintf("%s:%s", h, p)
 }

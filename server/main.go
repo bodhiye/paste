@@ -15,6 +15,7 @@ import (
 	"paste.org.cn/paste/server/db"
 	"paste.org.cn/paste/server/middleware"
 	"paste.org.cn/paste/server/router"
+	"paste.org.cn/paste/server/storage"
 	"paste.org.cn/paste/server/util"
 )
 
@@ -33,16 +34,13 @@ func main() {
 	util.InitializeLimits()
 
 	// 初始化 图片存储 配置
-	util.InitializeStorage()
+	storage.InitializeStorage()
 
 	// 注入中间件
 	paste := gin.New()
 	paste.Use(gin.Recovery()) // gin.Recovery 是gin自带中间件，用于捕获panic并返回500错误
 	paste.Use(middleware.LogInfo)
 	paste.Use(middleware.ReqID)
-
-	// 添加静态文件服务
-	paste.Static("/uploads", "./uploads")
 
 	// 初始化数据库
 	pasteDB, err := db.NewPaste(ctx, viper.Sub("paste.mgo")) //viper.Sub从全局配置中提取键为“paste.mgo"的部分，并返回一个新的viper实例
@@ -66,14 +64,9 @@ func main() {
 	// 初始化路由
 	router.Init(paste, pasteDB)
 
-	// 初始化图片清理器
-	imageCleaner := util.NewImageCleaner(pasteDB.GetCollection())
-	imageCleaner.Start()
-	defer imageCleaner.Stop()
-
 	// 创建服务器
 	srv := &http.Server{
-		Addr:    util.GetServerHost(),
+		Addr:    util.GetServerHost(viper.GetString("server.host")),
 		Handler: paste,
 	}
 	// 启动服务器

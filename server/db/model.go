@@ -11,7 +11,7 @@ type PasteEntry struct {
 	Title       string            `json:"title" bson:"title"`                             // 分享标题
 	Description string            `json:"description" bson:"description"`                 // 分享描述
 	Snippets    []proto.Snippet   `json:"snippets" bson:"snippets"`                       // 多段代码内容
-	Images      []proto.ImageFile `json:"images,omitempty" bson:"images,omitempty"`       // 多张截图分享内容
+	Images      []proto.ImageFile       `json:"images,omitempty" bson:"images,omitempty"`       // 多张截图分享内容
 	Password    string            `json:"password,omitempty" bson:"password,omitempty"`   // 密码保护
 	ClientIP    string            `json:"client_ip" bson:"client_ip"`                     // 客户端 IP
 	Once        bool              `json:"once" bson:"once,omitempty"`                     // 是否一次性阅读

@@ -11,6 +11,7 @@ import (
 
 	"paste.org.cn/paste/server/db"
 	"paste.org.cn/paste/server/proto"
+	"paste.org.cn/paste/server/storage"
 	"paste.org.cn/paste/server/util"
 )
 
@@ -79,7 +80,7 @@ func (p *Paste) PostPaste(c *gin.Context) {
 		}
 	}
 
-	req.Images, err = util.UploadImages(c, log)
+	req.Images, err = storage.UploadImages(c, log)
 	if err != nil {
 		log.Errorf("获取图片失败: %+v", err)
 		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
@@ -104,8 +105,8 @@ func (p *Paste) PostPaste(c *gin.Context) {
 	}
 
 	// 设置过期时间（如果有）
-	if req.ExpireDate > 0 {
-		entry.ExpireAt = time.Now().Add(time.Second * time.Duration(req.ExpireDate))
+	if req.ExpireAt > 0 {
+		entry.ExpireAt = time.Now().Add(time.Hour * time.Duration(req.ExpireAt))
 	}
 
 	// 保存到数据库
@@ -159,18 +160,18 @@ func (p *Paste) PostPasteOnce(c *gin.Context) {
 	// 验证代码片段内容
 	for _, snippet := range req.Snippets {
 		length := utf8.RuneCountInString(snippet.Content)
-		if length > 10000 { // 一次性分享内容限制更严格
+		if length > util.LimitConfig.SnippetsLength() { // 一次性分享内容限制更严格
 			log.Errorf("内容过长: %d", length)
 			c.JSON(http.StatusBadRequest, proto.PostPasteResp{
 				Code:    http.StatusBadRequest,
-				Message: fmt.Sprintf(proto.ErrTooManyContent, 10000),
+				Message: fmt.Sprintf(proto.ErrTooManyContent, util.LimitConfig.SnippetsLength()),
 			})
 			return
 		}
 	}
 
 	// 获取图片
-	req.Images, err = util.UploadImages(c, log)
+	req.Images, err = storage.UploadImages(c, log)
 	if err != nil {
 		log.Errorf("获取图片失败: %+v", err)
 		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
@@ -242,6 +243,24 @@ func (p *Paste) GetPaste(c *gin.Context) {
 			})
 		}
 		return
+	}
+
+	// 处理图片URL：如果是云存储，按需生成临时签名URL
+	if len(entry.Images) > 0 && entry.Images[0].StorageType == storage.StorageTypeCloud {
+		for i := range entry.Images {
+			objectKey := entry.Images[i].ObjectKey
+			if objectKey != "" {
+				signedURL, err := storage.StorageConfig.OSS.GetSignedURL(ctx, objectKey)
+				if err != nil {
+					log.Warnf("为 objectKey '%s' 生成签名URL失败: %+v", objectKey, err)
+					entry.Images[i].URL = "" // 生成签名URL失败，设置为空
+				} else {
+					entry.Images[i].URL = signedURL // 更新为签名URL
+				}
+			} else {
+				entry.Images[i].URL = "" // ObjectKey 不存在
+			}
+		}
 	}
 
 	if entry.Images == nil {

@@ -1,20 +1,18 @@
 package db
-
 import (
 	"context"
 	"errors"
 	"sync"
 	"time"
 
-	"github.com/spf13/viper"                    // 用于读取配置文件
-	"go.mongodb.org/mongo-driver/bson"          // 用于处理 BSON 格式数据
-	"go.mongodb.org/mongo-driver/mongo"         // MongoDB 驱动
-	"go.mongodb.org/mongo-driver/mongo/options" // 用于设置 MongoDB 操作的选项
+	"github.com/google/uuid"
+	"github.com/spf13/viper"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 
 	"paste.org.cn/paste/server/proto"
-
-	"github.com/google/uuid"
 )
 
 // 保存全局MongoDB客户端实例
