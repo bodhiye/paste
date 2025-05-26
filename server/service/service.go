@@ -1,6 +1,8 @@
 package service
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 	"unicode/utf8"
@@ -9,6 +11,7 @@ import (
 
 	"paste.org.cn/paste/server/db"
 	"paste.org.cn/paste/server/proto"
+	"paste.org.cn/paste/server/storage"
 	"paste.org.cn/paste/server/util"
 )
 
@@ -21,52 +24,103 @@ func (p *Paste) PostPaste(c *gin.Context) {
 	var (
 		ctx, log = util.EnsureWithLogger(c)
 		req      proto.PostPasteReq
-		length   int
+		err      error
 	)
 
-	err := c.BindJSON(&req)
-	if err != nil {
-		log.Errorf("BindJSON failed: %+v", err)
+	// 使用 ShouldBind 绑定基本字段
+	if err = c.ShouldBind(&req); err != nil {
+		log.Errorf("绑定请求数据失败: %+v", err)
 		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
 			Code:    http.StatusBadRequest,
-			Message: proto.InvalidArgs,
+			Message: proto.ErrInvalidArgs,
 		})
 		return
 	}
 
-	// 计算内容的字符数（而不是字节数，对多字节字符友好）
-	length = utf8.RuneCountInString(req.Content)
-	if length > 100000 {
-		log.Errorf("Content is too long: %d", length)
+	// 需要手动解析snippets
+	raw := c.PostForm("snippets")
+	if err = json.Unmarshal([]byte(raw), &req.Snippets); err != nil {
+		log.Errorf("解析snippets失败: %+v", err)
 		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
 			Code:    http.StatusBadRequest,
-			Message: proto.TooManyContent,
+			Message: proto.ErrInvalidArgs,
+		})
+		return
+	}
+
+	if len(req.Snippets) == 0 && len(req.Images) == 0 {
+		log.Errorf("内容为空")
+		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
+			Code:    http.StatusBadRequest,
+			Message: proto.ErrInvalidArgs,
+		})
+		return
+	}
+
+	// 验证代码片段数量
+	if len(req.Snippets) > util.LimitConfig.SnippetsCount() {
+		log.Errorf("代码片段数量过多: %d", len(req.Snippets))
+		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
+			Code:    http.StatusBadRequest,
+			Message: fmt.Sprintf(proto.ErrTooManyCount, util.LimitConfig.SnippetsCount()),
+		})
+		return
+	}
+
+	// 验证代码片段内容
+	for _, snippet := range req.Snippets {
+		length := utf8.RuneCountInString(snippet.Content)
+		if length > util.LimitConfig.SnippetsLength() {
+			log.Errorf("内容过长: %d", length)
+			c.JSON(http.StatusBadRequest, proto.PostPasteResp{
+				Code:    http.StatusBadRequest,
+				Message: fmt.Sprintf(proto.ErrTooManyContent, util.LimitConfig.SnippetsLength()),
+			})
+			return
+		}
+	}
+
+	req.Images, err = storage.UploadImages(c, log)
+	if err != nil {
+		log.Errorf("获取图片失败: %+v", err)
+		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
+			Code:    http.StatusBadRequest,
+			Message: proto.ErrUploadFailed,
 		})
 		return
 	}
 
 	entry := db.PasteEntry{
-		Langtype:  req.Langtype,
-		Content:   req.Content,
-		ClientIP:  c.ClientIP(),
-		CreatedAt: time.Now(),
-	}
-	if req.Password != "" {
-		entry.Password = util.String2md5(req.Password)
-	}
-	if req.ExpireDate > 0 {
-		entry.ExpireAt = time.Now().Add(time.Second * time.Duration(req.ExpireDate))
+		Title:       req.Title,
+		Description: req.Description,
+		Snippets:    req.Snippets,
+		Images:      req.Images,
+		ClientIP:    c.ClientIP(),
+		CreatedAt:   time.Now(),
 	}
 
+	// 设置密码（如果有）
+	if req.Password != "" {
+		entry.Password = util.String2bcrypt(req.Password)
+	}
+
+	// 设置过期时间（如果有）
+	if req.ExpireAt > 0 {
+		entry.ExpireAt = time.Now().Add(time.Hour * time.Duration(req.ExpireAt))
+	}
+
+	// 保存到数据库
 	key, err := p.Paste.Set(ctx, entry)
 	if err != nil {
-		log.Errorf("Failed to insert entry into database: %+v", err)
+		log.Errorf("插入数据库失败: %+v", err)
 		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
 			Code:    http.StatusBadRequest,
-			Message: proto.PasteFailed,
+			Message: proto.ErrPasteFailed,
 		})
 		return
 	}
+
+	// 返回成功响应
 	c.JSON(http.StatusCreated, proto.PostPasteResp{
 		Code: http.StatusCreated,
 		Key:  key,
@@ -75,54 +129,87 @@ func (p *Paste) PostPaste(c *gin.Context) {
 
 // 创建一次性分享内容
 func (p *Paste) PostPasteOnce(c *gin.Context) {
+	// 复用相同逻辑，仅添加一次性标记
 	var (
 		ctx, log = util.EnsureWithLogger(c)
 		req      proto.PostPasteReq
-		length   int
+		err      error
 	)
 
-	err := c.BindJSON(&req)
+	// 使用 ShouldBind 绑定基本字段
+	if err = c.ShouldBind(&req); err != nil {
+		log.Errorf("绑定请求数据失败: %+v", err)
+		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
+			Code:    http.StatusBadRequest,
+			Message: proto.ErrInvalidArgs,
+		})
+		return
+	}
+
+	// 需要手动解析snippets
+	raw := c.PostForm("snippets")
+	if err = json.Unmarshal([]byte(raw), &req.Snippets); err != nil {
+		log.Errorf("解析snippets失败: %+v", err)
+		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
+			Code:    http.StatusBadRequest,
+			Message: proto.ErrInvalidArgs,
+		})
+		return
+	}
+
+	// 验证代码片段内容
+	for _, snippet := range req.Snippets {
+		length := utf8.RuneCountInString(snippet.Content)
+		if length > util.LimitConfig.SnippetsLength() { // 一次性分享内容限制更严格
+			log.Errorf("内容过长: %d", length)
+			c.JSON(http.StatusBadRequest, proto.PostPasteResp{
+				Code:    http.StatusBadRequest,
+				Message: fmt.Sprintf(proto.ErrTooManyContent, util.LimitConfig.SnippetsLength()),
+			})
+			return
+		}
+	}
+
+	// 获取图片
+	req.Images, err = storage.UploadImages(c, log)
 	if err != nil {
-		log.Errorf("BindJSON failed: %+v", err)
+		log.Errorf("获取图片失败: %+v", err)
 		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
 			Code:    http.StatusBadRequest,
-			Message: proto.InvalidArgs,
+			Message: proto.ErrUploadFailed,
 		})
 		return
 	}
 
-	length = utf8.RuneCountInString(req.Content)
-	if length > 10000 {
-		log.Errorf("Content is too long: %d", length)
-		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
-			Code:    http.StatusBadRequest,
-			Message: proto.TooManyContent,
-		})
-		return
-	}
-
+	// 创建数据库记录
 	entry := db.PasteEntry{
-		Langtype:  req.Langtype,
-		Content:   req.Content,
-		ClientIP:  c.ClientIP(),
-		Once:      true,
-		CreatedAt: time.Now(),
+		Title:       req.Title,
+		Description: req.Description,
+		Snippets:    req.Snippets,
+		Images:      req.Images,
+		ClientIP:    c.ClientIP(),
+		Once:        true, // 标记为一次性
+		CreatedAt:   time.Now(),
 	}
 
+	// 设置密码（如果有）
 	if req.Password != "" {
-		entry.Password = util.String2md5(req.Password)		
+		entry.Password = util.String2bcrypt(req.Password)
 	}
 
+	// 保存到数据库
 	key, err := p.Paste.Set(ctx, entry)
 	if err != nil {
-		log.Errorf("Failed to insert entry into database: %+v", err)
+		log.Errorf("插入数据库失败: %+v", err)
 		c.JSON(http.StatusBadRequest, proto.PostPasteResp{
 			Code:    http.StatusBadRequest,
-			Message: proto.PasteFailed,
+			Message: proto.ErrPasteFailed,
 		})
 		return
 	}
-	c.JSON(http.StatusOK, proto.PostPasteResp{
+
+	// 返回成功响应
+	c.JSON(http.StatusCreated, proto.PostPasteResp{
 		Code: http.StatusCreated,
 		Key:  key,
 	})
@@ -131,35 +218,59 @@ func (p *Paste) PostPasteOnce(c *gin.Context) {
 // 获取分享内容
 func (p *Paste) GetPaste(c *gin.Context) {
 	var (
-		ctx, log      = util.EnsureWithLogger(c)
-		// 从URL路径参数获取key，从URL查询参数中获取passwor
+		ctx, log = util.EnsureWithLogger(c)
+		// 从URL路径参数获取key，从URL查询参数中获取password
 		key, password = c.Param("key"), c.Query("password")
 	)
 
 	entry, err := p.Paste.Get(ctx, key, password)
 	if err != nil {
-		log.Errorf("Failed to get entry: %+v", err)
-		if err.Error() == proto.WrongPassword {
+		log.Errorf("获取分享内容失败: %+v", err)
+		if err.Error() == proto.ErrWrongPassword {
 			c.JSON(http.StatusOK, proto.GetPasteResp{
 				Code:    http.StatusUnauthorized,
-				Message: proto.WrongPassword,
+				Message: proto.ErrWrongPassword,
 			})
-		} else if err.Error() == proto.ContentExpired {
+		} else if err.Error() == proto.ErrContentExpired {
 			c.JSON(http.StatusOK, proto.GetPasteResp{
 				Code:    http.StatusLocked,
-				Message: proto.ContentExpired,
+				Message: proto.ErrContentExpired,
 			})
 		} else {
 			c.JSON(http.StatusOK, proto.GetPasteResp{
 				Code:    http.StatusBadRequest,
-				Message: proto.GetPasteFailed,
+				Message: proto.ErrGetPasteFailed,
 			})
 		}
 		return
 	}
+
+	// 处理图片URL：如果是云存储，按需生成临时签名URL
+	if len(entry.Images) > 0 && entry.Images[0].StorageType == storage.StorageTypeCloud {
+		for i := range entry.Images {
+			objectKey := entry.Images[i].ObjectKey
+			if objectKey != "" {
+				signedURL, err := storage.StorageConfig.OSS.GetSignedURL(ctx, objectKey)
+				if err != nil {
+					log.Warnf("为 objectKey '%s' 生成签名URL失败: %+v", objectKey, err)
+					entry.Images[i].URL = "" // 生成签名URL失败，设置为空
+				} else {
+					entry.Images[i].URL = signedURL // 更新为签名URL
+				}
+			} else {
+				entry.Images[i].URL = "" // ObjectKey 不存在
+			}
+		}
+	}
+
+	if entry.Images == nil {
+		entry.Images = []proto.ImageFile{}
+	}
+
+	// 返回成功响应
 	c.JSON(http.StatusOK, proto.GetPasteResp{
 		Code:     http.StatusOK,
-		Langtype: entry.Langtype,
-		Content:  entry.Content,
+		Snippets: entry.Snippets,
+		Images:   entry.Images,
 	})
 }

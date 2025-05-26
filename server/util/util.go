@@ -1,30 +1,41 @@
 package util
 
 import (
-	"crypto/md5"
-	"encoding/hex"
+	"log"
 	"math/rand"
+	"sync"
 	"time"
 	"unsafe"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // 定义用于生成随机字符串的常量
 const (
 	letterBytes   = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	letterIdxBits = 6      // 每个字符占用的比特数
-	letterIdxMask = 1<<letterIdxBits - 1  // 用于位运算的掩码
-	letterIdxMax  = 63 / letterIdxBits  // 每个 63 位随机数可生成的字符数
+	letterIdxBits = 6                    // 每个字符占用的比特数
+	letterIdxMask = 1<<letterIdxBits - 1 // 用于位运算的掩码
+	letterIdxMax  = 63 / letterIdxBits   // 每个 63 位随机数可生成的字符数
+)
+
+// 全局随机数生成器及互斥锁
+var (
+	rng   = rand.New(rand.NewSource(time.Now().UnixNano())) // 全局随机数生成器
+	rngMu sync.Mutex                                        // 保护随机数生成器的互斥锁
 )
 
 // RandString 返回一个指定长度的随机字符串
 func RandString(n int) string {
-	var src = rand.NewSource(time.Now().UnixNano()) // 使用当前时间的纳秒数作为随机数种子
-	b := make([]byte, n)                            // 用于存储生成的随机字符
+	b := make([]byte, n) // 用于存储生成的随机字符
+
+	// 使用互斥锁保护随机数生成器
+	rngMu.Lock()
+	defer rngMu.Unlock()
 
 	// 填充字节切片
-	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
+	for i, cache, remain := n-1, rng.Int63(), letterIdxMax; i >= 0; {
 		if remain == 0 {
-			cache, remain = src.Int63(), letterIdxMax // 当缓存用尽时，重新生成随机数
+			cache, remain = rng.Int63(), letterIdxMax // 当缓存用尽时，重新生成随机数
 		}
 		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
 			b[i] = letterBytes[idx] // 从字符集中选择对应的字符
@@ -38,9 +49,12 @@ func RandString(n int) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
-// String2md5 返回输入字符串的 MD5 哈希值的十六进制表示
-func String2md5(str string) string {
-	h := md5.New()
-	h.Write([]byte(str))
-	return hex.EncodeToString(h.Sum(nil)) // 返回哈希值的十六进制编码
+// String2bcryt 返回输入字符串的 bcrypt 哈希值
+func String2bcrypt(str string) string {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(str), bcrypt.DefaultCost)
+	if err != nil {
+		log.Fatalf("Encryption failure: %+v", err)
+		return ""
+	}
+	return string(hashedPassword)
 }

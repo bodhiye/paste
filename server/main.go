@@ -15,6 +15,7 @@ import (
 	"paste.org.cn/paste/server/db"
 	"paste.org.cn/paste/server/middleware"
 	"paste.org.cn/paste/server/router"
+	"paste.org.cn/paste/server/storage"
 	"paste.org.cn/paste/server/util"
 )
 
@@ -29,6 +30,12 @@ func main() {
 	// 加载配置文件
 	util.LoadConfig("config")
 
+	// 初始化 Limits 配置
+	util.InitializeLimits()
+
+	// 初始化 图片存储 配置
+	storage.InitializeStorage()
+
 	// 注入中间件
 	paste := gin.New()
 	paste.Use(gin.Recovery()) // gin.Recovery 是gin自带中间件，用于捕获panic并返回500错误
@@ -41,6 +48,19 @@ func main() {
 		log.Errorf("init paste db failed: %+v", err)
 		return
 	}
+
+	// 在程序结束时断开MongoDB连接
+	mongoClient := db.GetMongoClient()
+	defer func() {
+		if mongoClient != nil {
+			if err := mongoClient.Disconnect(context.Background()); err != nil {
+				log.Errorf("failed to disconnect from MongoDB: %v", err)
+			} else {
+				log.Info("successfully disconnected from MongoDB")
+			}
+		}
+	}()
+
 	// 初始化路由
 	router.Init(paste, pasteDB)
 
